@@ -1,0 +1,456 @@
+
+Python开发入门
+
+数字
+
+基本数字类型
+•  int:有符号整数
+•  bool:布尔值
+–  True:1
+–  False:0
+•  float:浮点数
+•  complex:复数
+
+数字表示方式
+•  python默认以十进制数显示
+•  数字以0o或0O开头表示为8进制数
+•  数字以0x或0X开头表示16进制数
+•  数字以0b或0B开头表示2进制数
+
+python3 终端修改文件权限
+import os
+os.chmod("/tmp/passwd",0o600)
+
+
+字符串
+定义字符串
+•  python中字符串被定义为引号之间的字符集合
+•  python支持使用成对的单引号或双引号
+•  无论单引号,还是双引号,表示的意义相同
+•  python还支持三引号(三个连续的单引号或者双引号),可以用来包含特殊字符,支持换行回车，可以保持输入格式
+•  python不区分字符和字符串
+
+>>> sentence = "tom's cat is dog"
+>>> sentence
+"tom's cat is dog"
+>>> sentence1 = 'tom said "cat is dog"'
+>>> sentence1
+'tom said "cat is dog"'
+>>> words = '''
+... haha
+... xix
+... tang'''
+>>> words
+'\nhaha\nxix\ntang'
+>>> print (words)
+
+haha
+xix
+tang
+
+字符串切片
+•  使用索引运算符[ ]和切片运算符[ : ]可得到子字符串
+•  第一个字符的索引是0,最后一个字符的索引是-1
+•  子字符串包含切片中的起始下标,但不包含结束下标
+>>> py_str = 'Python'	
+>>> py_str[0]	
+'P'	
+>>> py_str[-2]	倒数第二个字符
+'o'	
+>>> py_str[2:4]	切片，起始下标包含，结束下标不包含
+'th'	
+>>> 'python'[0]
+'p'
+>>> len(py_str)	取字符串长度
+6
+>>> py_str[6]	错误，下标超出范围
+>>> py_str[2:6]
+'thon'
+>>> py_str[2:60]
+'thon'
+>>> py_str[2:]	从下标为2的字符取到结尾
+'thon'	
+>>> py_str[:4]	从开头取到下标是4之前的字符
+'Pyth'
+>>> py_str[:]	取全部字符
+'python'
+>>> py_str[::2]	步长值2，默认是1
+'pto'
+>>> py_str[1::2]	
+'yhn'
+>>> py_str[::-1]	步长为负，表示倒序，前面的取值要从大到小取
+'nohtyp'
+
+>>> py_str[:3:-1]	更确切的讲，-1表示倒序，这里表示从最后一位到第三位，第三位不包括
+'no'
+>>> py_str[:4:-1]
+'n'
+>>> py_str[:1:-1]
+'noht'
+>>> py_str[3::-1] 这里也是倒序，从最开始一位到第三位，第三位包括
+'htyp'
+>>> py_str[3:-1]
+'ho'
+>>> py_str[1::-1]
+'yp'
+>>> py_str[1:5:-1]
+''
+>>> py_str[3:1:-1] 从第三位到第一位，第三位包括，第一位不包括
+'ht'
+
+字符串连接操作
+•  使用+号可以将多个字符串拼接在一起
+•  使用*号可以将一个字符串重复多次
+>>> py_str = 'python'	
+>>> is_cool = 'is Cool‘	
+>>> print py_str + ''+ is_cool	
+python is Cool	
+>>> py_str *2	
+'pythonpython'	
+
+
+定义列表
+•  可以将列表当成普通的“数组”,它能保存任意数量
+任意类型的python对象
+•  像字符串一样,列表也支持下标和切片操作
+•  列表中的项目可以改变
+>>> alist = [1,"tom",2,"alice"]	
+>>> alist[1] = 'bob‘	重新定义第一个下标的值
+>>> alist[2:]
+
+>>> alist = [1,"tom",2,"alice",[1,2,3]]
+>>> alist[-1]
+[1, 2, 3]
+>>> alist[-1][-1]		取完下标之后，可以对取出来的继续取下标
+3
+
+成员关系判断
+>>> 'o' in py_str
+True
+>>> 'to' in py_str
+False
+>>> 'to' not in py_str
+True
+
+>>> alist.append(200)	在列表中追加一项
+
+元组的定义及操作
+•  可以认为元组是“静态”的列表
+•  元组一旦定义,不能改变
+>>>atuple=(1,"tom",2,"alice")	
+>>>'tom' in	atuple	
+True	
+>>>atuple[0] =3	报错，元组的值不能变	
+
+字典
+字典的定义及操作
+•  字典是由键-值(key-value)对构成的映射数据类型
+•  通过键取值,不支持下标操作
+
+>>> adic = {'name':'bob','age':23}
+>>> len(adic)
+2
+>>> 'bob' in adic
+False
+>>> 'name' in adic
+True
+>>> adic['name']
+'bob'
+
+数据类型比较
+•  按存储模型分类
+–  标量类型:数值、字符串
+–  容器类型:列表、元组、字典
+•  按更新模型分类:
+–  可变类型:列表、字典
+–  不可变类型:数字、字符串、元组
+•  按访问模型分类
+–  直接访问:数字
+–  顺序访问:字符串、列表、元组
+–  映射访问:字典
+
+非常重要
+
+列表可变，这里blist和alist标注的是内存的同一块空间，所以b改变a也改变
+>>> alist
+[1, 'tom', 2, 'alice', [1, 2, 3], 200]
+>>> blist = alist
+>>> blist[0]=2
+>>> blist
+[2, 'tom', 2, 'alice', [1, 2, 3], 200]
+>>> alist
+[2, 'tom', 2, 'alice', [1, 2, 3], 200]
+
+clist通过alist取值的方式赋值，相当于给clist重新开辟一块内存空间，c变a不变
+>>> clist = alist[:]
+>>> clist[0]=3
+>>> clist
+[3, 'tom', 2, 'alice', [1, 2, 3], 200]
+>>> alist
+[2, 'tom', 2, 'alice', [1, 2, 3], 200]
+
+
+判断语句
+
+if语句语法结构
+•  标准if条件语句的语法
+if expression:	
+	if_suite	
+else:	
+	else_suite	
+•  如果表达式的值非0或者为布尔值True, 则代码组if_suite被执行;否则就去执行else_suite
+•  代码组是一个python术语,它由一条或多条语句组成,表示一个子代码块
+
+if 3>0 :
+    print('yes')
+    print('ok')
+print('done')
+if 'i' in 'print' :	
+    print('haha')
+if 0:
+    print('no')		任何值为0的数字就是False
+if 10 not in ('9','8','7'):
+    print('duide')	非空对象都是True
+if ' ':
+    print('shikongde ')  空格字符也是字符，条件为True
+
+•  只要表达式数字为非零值即为True
+•  空字符串、空列表、空元组,空字典的值均为False
+
+user = input('请输入用户名：')
+passwd = input('请输入密码：')
+if user == 'bob' and passwd == '123456':
+    print('Login successful')
+else:
+    print('Login inorrect')
+
+
+import getpass  # 导入模块
+username = input('username: ')
+# getpass模块中，有一个方法也叫getpass
+password = getpass.getpass('password: ')      #输入的密码不显示
+
+if username == 'bob' and password == '123456':
+    print('Login successful')
+else:
+    print('Login incorrect')
+
+
+
+
+import random
+num = int(input ('guess a number:'))
+answer = random.randint(1, 10)      从1到10,包含10
+if num > answer :
+    print ('caidale')
+elif num < answer :
+    print ('caixiaole')
+print ('correct number:',answer)
+
+
+grade = int( input('输入成绩'))
+if grade > 90 :
+    print('优秀')
+elif grade > 80 :
+    print('好')
+elif grade > 70 :
+    print('良')
+elif grade > 60 :
+    print('及格')
+else:
+    print('要努力了')
+
+grade = int( input('输入成绩'))
+if grade >= 60 and grade <70 :
+    print('及格')
+elif 70<= grade < 80 :
+    print('良')
+elif 80 <= grade < 90 :
+    print('好')
+elif grade >= 90 : 
+    print('优秀')
+else:
+    print('要努力了')
+
+vim -O file1 file2   分屏显示  ctrl +w 左右进行调整
+
+条件表达式
+•  Python 在很长的一段时间里没有条件表达式(C ?X:Y),或称三元运算符,因为范·罗萨姆一直拒绝加入这样的功能
+•  从Python 2.5集成的语法确定为: X if C else Y
+>>>x,y=3,4	
+>>>smaller = x if x < y else y	
+>>>print (smaller)	
+3	
+
+案例3:编写石头剪刀布小游戏
+•  编写game.py,要求如下:
+1.  计算机随机出拳
+2.  玩家自己决定如何出拳
+3.  代码尽量简化
+
+import random
+allchoices = ['石头','剪刀','布']
+winlist = [['石头','剪刀'],['剪刀','布'],['布','石头']]
+
+computer = random.choice (allchoices)
+player = input('请出拳：')
+
+print("your choice: %s ,computer's choice : %s" %(player,computer))
+if player == computer :
+    print ('pingju')
+elif [player,computer] in winlist :
+    print('you win!!!')
+else:
+    print('you lose!!!')
+
+
+>>> import this  # python之禅
+美胜丑，明胜暗，简胜繁
+
+优化简化
+import random
+allchoices = ['石头','剪刀','布']
+winlist = [['石头','剪刀'],['剪刀','布'],['布','石头']]
+ind = int(input('''(0) 石头
+(1) 剪刀
+(2) 布
+请选择（0/1/2）:'''))
+computer = random.choice (allchoices)
+player = allchoices[ind]
+
+print("your choice: %s ,computer's choice : %s" %(player,computer))
+if player == computer :
+    print ('\033[32;1mpingju\033[0m')			#32是绿色
+elif [player,computer] in winlist :
+    print('\033[31;1myou win!!!\033[0m')			#31是红色
+else:
+    print('\033[31;1myou lose!!!\033[0m')
+
+
+while循环
+
+循环语句基础
+•  一组被重复执行的语句称之为循环体,能否继续重复,决定循环的终止条件
+•  Python中的循环有while循环和for循环
+•  循环次数未知的情况下,建议采用while循环
+•  循环次数可以预知的情况下,建议采用for循环
+
+while循环语法结构
+
+•  当需要语句不断的重复执行时,可以使用while循环
+while	expression:	
+    while_suite	
+•  语句while_suite会被连续不断的循环执行,直到表达式的值变成0或False
+sum100 = 0	
+counter = 1	
+	
+while	counter <= 100:
+    sum100 += counter
+    counter += 1
+print	("result is %d" %	sum100)		#  %d 为数字，%s为文本
+
+划中所选区域，按table键就把对应的行前加一个table
+划中所选区域，按shift +table键就把对应的行前减一个table
+
+
+break语句
+•  break语句可以结束当前循环然后跳转到下条语句
+•  写程序的时候,应尽量避免重复的代码,在这种情况
+下可以使用while-break结构
+
+python 的DRY原则：don't repeat yourself
+
+
+while 1:
+    yn = input('Continue(y/n):')
+    if yn in ['n','N'] :
+        break
+    print('running...')			精简原则，这里的else：可以省去
+
+  continue语句
+•  当遇到continue语句时,程序会终止当前循环,并忽略剩余的语句,然后回到循环的顶端
+•  如果仍然满足循环条件,循环体内语句继续执行,否则退出循环 
+sum100 = 0
+counter =0
+while counter < 100 :
+    counter += 1
+    if counter % 2 :
+        continue
+    sum100 += counter
+print(sum100)
+
+else语句
+•  python中的while语句也支持else子句
+•  else子句只在循环完成后执行
+•  break语句也会跳过else块
+
+案例
+•  编写guess.py,要求如下:
+1.  系统随机生成100以内的数字
+2.  要求用户猜生成的数字是多少
+3.  最多猜5次,猜对结束程序
+4.  如果5次全部猜错,则输出正确结果
+
+
+import random
+
+num = random.randint(1, 10)
+counter = 0
+
+while counter < 5:
+    answer = int(input('guess the number: '))
+    if answer > num:
+        print('猜大了')
+    elif answer < num:
+        print('猜小了')
+    else:
+        print('猜对了')
+        break
+    counter += 1
+else:  # 循环被break就不执行了，没有被break才执行
+    print('the number is:', num)
+
+
+案例:完善石头剪刀布小游戏
+•  编写game2.py,要求如下:
+1.  基于上节game.py程序
+2.  实现循环结构,要求游戏三局两胜
+
+import random
+allchoices = ['石头','剪刀','布']
+winlist = [['石头','剪刀'],['剪刀','布'],['布','石头']]
+promt = '''(0) 石头
+(1) 剪刀
+(2) 布
+请选择（0/1/2）'''
+winnum = 0
+losenum = 0
+while winnum <2 and losenum <2:
+    computer = random.choice(allchoices)
+    ind = int(input(promt))
+    player = allchoices[ind]
+    print("your choice: %s, computer's choice: %s" %(player,computer) )
+    if player == computer :
+        print('\033[32;1m平局\033[0m')
+    elif [player,computer] in winlist :
+        winnum += 1
+        print('\033[31;1mYOU WIN\033[0m',winnum,'times')
+    else:
+        losenum += 1
+        print('\033[31;1mYOU LOSE\033[0m',losenum,'times')
+
+else:
+    if winnum == 2:
+        print('\033[31;1mFinally:YOU WIN!!!\033[0m')
+    else :
+        print('\033[31;1mFinally:YOU LOSE!!!\033[0m')
+
+
+
+
+
+
+
+
+
+

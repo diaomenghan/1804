@@ -1,0 +1,60 @@
+[root@svr7 ~]# cat /root/fullatset.sh
+#!/bin/bash
+for i in 207
+do
+	expect << EOF
+	set timeout -1
+	spawn ssh -o StrictHostKeyChecking=no 192.168.4.$i
+	expect "password:"	{ send "123456\r" }
+	expect "#"		{ send "wget ftp://192.168.4.7/at_setup_nginx.sh\r"}
+	expect "#"		{ send "chmod +x ./at_setup_nginx.sh\r"}
+	expect "#"		{ send "./at_setup_nginx.sh\r" }
+	expect "服务已启动"	{ send "exit\r" }
+	expect "#"		{ send "exit\r"}
+EOF
+done
+
+
+[root@svr7 ~]# cat /root/at_setup_nginx.sh 
+#!/bin/bash
+ynum=`yum repolist | awk '/repolist/{print $2}' | sed 's/,//g'`
+[ $ynum -gt 0 ] && echo "yum源可用" || "echo "yum源不可用,请配置";exit"
+
+yum -y install gcc openssl-devel pcre-devel make
+wget -O /root/nginx.tar.gz ftp://192.168.4.7/nginx-1.10.3.tar.gz
+tar -xf /root/nginx.tar.gz
+cd /root/nginx-1.10.3
+./configure
+make
+make install
+
+echo "
+#!/bin/bash
+case \$1 in
+start)
+	/usr/local/nginx/sbin/nginx ;;
+stop)
+	/usr/local/nginx/sbin/nginx -s stop ;;
+restart)
+	/usr/local/nginx/sbin/nginx -s stop
+	/usr/local/nginx/sbin/nginx ;;
+status) 
+	netstat -anptul | grep nginx
+	[ $? -eq 0 ] && echo nginx服务已启动 || echo nginx服务未启动;;
+*)
+	echo 'Usage:nginx start|stop|restart|status'
+esac
+" > /usr/local/sbin/nginx
+chmod +x /usr/local/sbin/nginx
+
+systemctl stop httpd
+systemctl disable httpd
+nginx start
+nginx status
+
+
+###将at_setup_nginx.sh和nginx的安装包放到ftp服务器上
+运行脚本/root/fullatset.sh
+
+
+

@@ -1,0 +1,752 @@
+
+Python开发进阶
+
+
+字典和集合
+
+字典基础操作
+
+创建字典
+•  通过{ }操作符创建字典
+•  通过dict()工厂方法创建字典
+•  通过fromkeys()创建具有相同值的默认字典
+
+访问字典
+•  字典是映射类型,意味着它没有下标,访问字典中的
+值需要使用相应的键
+
+
+更新字典
+•  通过键更新字典
+–  如果字典中有该键,则更新相关值
+–  如果字典中没有该键,则向字典中添加新值
+>>> adict = dict()
+>>> adict
+{}
+
+>>> dict(['ab','cd'])
+{'a': 'b', 'c': 'd'}
+
+>>> bdict = dict([('name','bob'),('age',43)])
+>>> bdict
+{'name': 'bob', 'age': 43}
+
+>>> {}.fromkeys(['zhangsan','kusu','bob'],11)
+{'zhangsan': 11, 'kusu': 11, 'bob': 11}
+
+>>> for key in bdict :
+...     print('%s:%s' % (key,bdict[key]))
+... 
+name:bob
+age:43
+
+>>> print('%(name)s:%(age)s' % bdick)
+bob:43
+
+>>> bdick['name'] = 'tom'
+>>> bdick
+{'name': 'tom', 'age': 43}
+>>> bdick['email'] = 'tom@tedu.cn'
+>>> bdick
+{'name': 'tom', 'age': 43, 'email': 'tom@tedu.cn'}
+
+
+删除字典
+•  通过del可以删除字典中的元素或整个字典
+•  使用内部方法clear()可以清空字典
+•  使用pop()方法可以“弹出”字典中的元素
+>>> del adict['email’]	
+>>> print(adict)	
+{'age': 22, 'name': 'bob’}	
+>>> adict.pop('age’)	
+22	
+>>> print(adict)	
+{'name':'bob’}	
+>>> adict.clear()	
+>>> print(adict)	
+{}	
+
+
+字典操作符
+•  使用字典键查找操作符[ ],查找键所对应的值
+•  使用in和not in判断键是否存在于字典中
+>>> adict = {'age': 23, 'name': 'bob'}	
+>>> print(adict['name’])	
+Bob
+>>> 'bob' in adict	
+False
+>>> 'name' in adict	
+True	
+
+
+字典相关函数
+
+作用于字典的函数
+•  len():返回字典中元素的数目
+•  hash():本身不是为字典设计的,但是可以判断某个对象是否可以作为字典的键
+字典内建方法
+•  dict.copy():返回字典(深复制)的一个副本
+•  dict.get(key, default=None):对字典dict中的键
+key,返回它对应的值value,如果字典中不存在此键,则返回default的值
+•  dict.setdefault(key, default=None):如果字典中不存在key键,由dict[key]=default为它赋值
+•  dict.items():返回一个包含字典中(键,值)对元组的列表
+•  dict.keys():返回一个包含字典中键的列表
+•  dict.values():返回一个包含字典中所有值的列表
+•  dict.update(dict2):将字典dict2的键-值对添加到字典dict
+
+
+>>> adict = dict([('name','bob'),('age','23')])
+>>> adict
+{'name': 'bob', 'age': '23'}
+>>> len(adict)
+2
+>>> hash(10)  # 判断给定的数据是不是不可变的，不可变数据才能作为key
+10
+>>> hash('10')
+-8525507676581654654
+>>> hash([1,2])
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+TypeError: unhashable type: 'list'
+>>> adict.keys()
+dict_keys(['name', 'age'])
+>>> adict.values()
+dict_values(['bob', '23'])
+>>> adict.items()
+dict_items([('name', 'bob'), ('age', '23')])
+
+# get方法常用，重要
+
+>>> adict.get('name')
+'bob'
+>>> print(adict.get('qq'))  # 取出字典中name对应的value，如果没有返回None
+None
+>>> print(adict.get('qq','not found'))
+not found
+>>> print(adict.get('age','not found'))
+23
+>>> adict.update({'name':'job'})
+>>> adict
+{'name': 'job', 'age': '23'}
+>>> adict.update({'phone':'1234124124'})
+>>> adict
+{'name': 'job', 'age': '23', 'phone': '1234124124'}
+
+
+案例1:模拟用户登陆信息系统
+1.  支持新用户注册,新用户名和密码注册到字典中
+2.  支持老用户登陆,用户名和密码正确提示登陆成功
+3.  主程序通过循环询问进行何种操作,根据用户的选择,执行注册或是登陆操作
+
+import getpass
+
+userdb = {}
+menu = '''you can do follows：
+(0) register
+(1) login
+(2) exit
+Please input your choice(0/1/2): '''
+
+def register() :
+    username = input('username： ')
+    if username in userdb :
+        print('%s already exists' % username)
+    else:
+        passwd = input('passwd： ')
+        userdb[username] = passwd
+
+def login() :
+    username = input('username： ')
+    passwd = getpass.getpass("passwd： ")
+    if userdb.get(username) != passwd :
+        print('login failed!')
+    else:
+        print('login successful!')
+
+def show_menu() :
+    while True :
+        cmds = {'0': register, '1': login, '2': exit}
+        choice = input(menu).strip()[0]
+        if choice not in '012' :
+            print('Invalid input. Try again.')
+            continue
+        cmds[choice]()
+
+if __name__ == '__main__':
+    show_menu()
+
+
+案例2:编写unix2dos的程序
+1.  Windows文本文件的行结束标志是\r\n
+2.  类unix文本文件的行结束标志是\n
+3.  编写程序,将unix文本文件格式转换为windows文
+本文件的格式
+
+import sys
+
+def unix2dos(fname):
+    dst_fname = fname + '.txt'
+
+    with open(fname) as src_fobj:
+        with open(dst_fname, 'w') as dst_fobj:
+            for line in src_fobj:
+                line = line.rstrip() + '\r\n'
+                dst_fobj.write(line)
+
+
+if __name__ == '__main__':
+    unix2dos(sys.argv[1])
+
+
+
+显示10秒计时，且后面显示的会替换掉前面的
+
+import time
+import sys
+
+for i in range(10) :
+    print('\r %s' % i ,end='')
+    sys.stdout.flush()
+    time.sleep(1)
+
+案例3:编写类进度条程序
+1.  在屏幕上打印20个#号
+2.  符号@从20个#号穿过
+3.  当@符号到达尾部,再从头开始
+
+import time
+
+lenth = 19
+count = 0
+
+while  True :
+    if count == lenth +1:
+        count = 0
+    print('\r%s@%s' % ('#'* count,'#'*(lenth-count)),end='')
+    count += 1
+    time.sleep(1)
+
+
+
+
+集合
+
+创建集合
+•  数学上,把set称做由不同的元素组成的集合,集合(set)的成员通常被称做集合元素
+•  集合对象是一组无序排列的可哈希的值
+•  集合有两种类型
+–  可变集合set
+–  不可变集合frozenset
+
+
+# 集合相当于是无值的字典，所以也用{}表示
+myset = set('hello')
+len(myset)
+for ch in myset:
+    print(ch)
+
+aset = set('abc')
+bset = set('cde')
+aset & bset  # 交集
+aset.intersection(bset)  # 交集
+aset | bset  # 并集
+aset.union(bset)  # 并集
+aset - bset  # 差补
+aset.difference(bset)  # 差补
+aset.add('new')
+aset.update(['aaa', 'bbb'])
+aset.remove('bbb')
+cset = set('abcde')
+dset = set('bcd')
+cset.issuperset(dset)  # cset是dset的超集么？
+cset.issubset(dset)  # cset是dset的子集么？
+
+
+
+
+
+
+运用的set集合的不重复性，进行比较
+
+
+案例： 比对2个大文件的不同的部分
+file1     file2
+
+with open('file1') as fobj :
+    aset = set(fobj)
+
+with open('file2') as fobj :
+    bset = set(fobj)
+
+with open('diff.txt','w') as fobj :
+    fobj.writelines(bset - aset)
+
+
+
+
+
+time模块
+
+时间表示方式
+•  时间戳timestamp:表示的是从1970年1月1日00:00:00开始按秒计算的偏移量
+•  UTC(Coordinated Universal Time,世界协调时)亦即格林威治天文时间,世界标准时间。
+在中国为UTC+8。DST(Daylight Saving Time)即夏令时
+•  元组(struct_time):由9个元素组成
+
+struct_time元组
+索引 		属性 				值
+0 		tm_year 			2000
+1 		tm_mon 			1-12
+2 		tm_mday 			1-31
+3 		tm_hour 			0-23
+4 		tm_min 			0-59
+5 		tm_sec 			0-61
+6 		tm_wday 			0-6(0表示周一)
+7 		tm_yday(一年中的第几天) 	1-366
+8 		tm_isdst(是否为dst时间) 	默认为-1
+
+time模块方法
+•  time.localtime([secs]):将一个时间戳转换为当前时区的struct_time。secs参数未提供,则以当前时间为准
+•  time.gmtime([secs]):和localtime()方法类似,
+gmtime()方法是将一个时间戳转换为UTC时区(0时区)的struct_time
+•  time.time():返回当前时间的时间戳
+•  time.mktime(t):将一个struct_time转化为时间戳
+•  time.sleep(secs):线程推迟指定的时间运行。单位为秒
+•  time.asctime([t]):把一个表示时间的元组或者struct_time表示为
+这种形式:‘Sun Jun 2023:21:05 1993’。如果没有参数,将会将time.localtime()作为参数传入
+•  time.ctime([secs]):把一个时间戳(按秒计算的浮点数)转化为time.asctime()的形式
+•  time.strftime(format[, t]):把一个代表时间的元组或者struct_time(如由time.localtime()和
+time.gmtime()返回)转化为格式化的时间字符串。如果t未指定,将传入time.localtime()
+•  time.strptime(string[, format]):把一个格式化时间字符串转化为struct_time。
+实际上它和strftime()是逆操作
+>>>time.strftime('%Y-%m-%d %X', time.localtime())	
+'2017-12-12 12:58:19'	
+
+时间样式
+格式	含义					格式		含义
+%a 	本地简化星期名称 			%m 		月份(01-12)
+%A 	本地完整星期名称 			%M 		分钟数(00-59)
+%b 	本地简化月份名称 			%p 		本地am或者pm的相应符
+%B	本地完整月份名称 			%S 		秒(01-61)
+%c 	本地相应的日期和时间 			%U 		一年中的星期数(00–53,星期日是一个星期的开始)
+%d 	一个月中的第几天(01-31) 		%w 		一个星期中的第几天(0-6,0是星期天)
+%H	一天中的第几个小时(24小时制,00-23)	%x 		本地相应日期
+%I 	第几个小时(12小时制,01-12) 		%X 		本地相应时间
+%j 	一年中的第几天(001-366) 		%y 		去掉世纪的年份(00-99)
+%Z 	时区的名字				%Y		完整的年份
+
+
+查看某个程序的运行时间
+import time
+
+result = 0
+start = time.time()
+for i in range(10000000):
+    result += i
+end = time.time()
+print(result)
+print(end - start)
+
+
+import time
+
+t = time.localtime()  # 返回当前时间的九元组
+time.gmtime()  # 返回格林威治0时区当前时间的九元组
+time.time()  # 常用，与1970-1-1 8:00之间的秒数，时间戳
+time.mktime(t)  # 把九元组时间转成时间戳
+time.sleep(1)
+time.asctime()  # 如果有参数，是九元组形式
+time.ctime()  # 返回当前时间，参数是时间戳，常用
+time.strftime("%Y-%m-%d") # 常用
+time.strptime('2018-07-20', "%Y-%m-%d")  # 返回九元组时间格式
+time.strftime('%H:%M:%S')
+
+###########################################
+from datetime import datetime
+from datetime import timedelta
+datetime.today()  # 返回当前时间的datetime对象
+datetime.now()  # 同上，可以用时区作参数
+datetime.strptime('2018/06/30', '%Y/%m/%d')  # 返回datetime对象
+dt = datetime.today()
+datetime.ctime(dt)
+datetime.strftime(dt, "%Y%m%d")
+
+days = timedelta(days=90, hours=3)  # 常用
+dt2 = dt + days
+dt2.year
+dt2.month
+dt2.day
+dt2.hour
+
+
+
+
+
+
+
+
+datetime模块
+
+•  datetime.today():返回一个表示当前本地时间的datetime对象
+•  datetime.now([tz]):返回一个表示当前本地时间的datetime对象,
+如果提供了参数tz,则获取tz参数所指时区的本地时间
+•  datetime.strptime(date_string, format):将格式字符串转换为datetime对象
+•  datetime.ctime(datetime对象):返回时间格式字符串
+•  datetime.strftime(format):返回指定格式字符串
+
+时间计算
+•  使用timedelta可以很方便的在日期上做天days,小
+时hour,分钟,秒,毫秒,微妙的时间计算
+>>> dt = datetime.datetime.now()	
+>>> days = datetime.timedelta(days=100, hours=3)	
+>>> dt + days	
+datetime.datetime(2050, 6, 10,	20, 41, 20, 106546)	
+
+
+
+
+
+
+
+
+
+
+异常处理
+
+什么是异常
+•  当python检测到一个错误时,解释器就会指出当前
+流已经无法继续执行下去,这时候就出现了异常
+•  异常是因为程序出现了错误而在正常控制流以外采取
+的行为
+•  这个行为又分为两个阶段:
+–  首先是引起异常发生的错误
+–  然后是检测(和采取可能的措施)阶段
+
+
+python中的异常
+•  当程序运行时,因为遇到未解的错误而导致中止运行,
+便会出现traceback消息,打印异常
+异常			描述
+NameError 		未声明/初始化对象
+IndexError 		序列中没有没有此索引
+SyntaxError 	语法错误
+KeyboardInterrupt	用户中断执行
+EOFError 		没有内建输入,到达EOF标记
+IOError 		输入/输出操作失败
+
+try-except语句
+•  定义了进行异常监控的一段代码,并且提供了处理异常的机制
+try:	
+    try_suite  #监控这里的异常
+except Exception[as reason]:	
+    except_suite	#异常处理代码
+>>> try:	
+... f = open('foo.txt')	
+... except FileNotFoundError:	
+...    print('No such file')	
+...
+No such file	
+
+
+
+
+带有多个expect的try语句
+•  可以把多个except语句连接在一起,处理一个try块中可能发生的多种异常
+
+
+try:
+    n = int(input('number:  '))
+    result = 100/n
+    print(result)
+
+except ZeroDivisionError :
+    print('0 not allowed')
+except ValueError:
+    print('invalid number')
+except KeyboardInterrupt:
+    print('byebye')
+except EOFError :
+    print('byebye')
+    
+print('done')
+
+
+
+try:
+    n = int(input('number:  '))
+    result = 100/n
+    print(result)
+
+
+except (ValueError,ZeroDivisionError):
+    print('invalid number')
+except (KeyboardInterrupt,EOFError):
+    print('\nbyebye')
+
+print('done')
+
+
+
+try:
+    n = int(input("number: "))
+    result = 100 / n
+except (ValueError, ZeroDivisionError):
+    print('invalid number')
+except (KeyboardInterrupt, EOFError):
+    print('\nBye-bye')
+else:
+    print(result)  # 异常不发生时才执行else子句
+finally:
+    print('Done')  # 不管异常是否发生都必须执行的语句
+
+# 常用形式有try-except和try-finally
+
+
+raise语句
+•  要想引发异常,最简单的形式就是输入关键字raise,
+后面跟要引发的异常的名称
+•  执行raise语句时,Python会创建指定的异常类的一个对象
+•  raise语句还可指定对异常对象进行初始化的参数
+
+断言
+•  断言是一句必须等价于布尔值为真的判定
+•  此外,发生异常也意味着表达式为假
+
+
+案例5:自定义异常
+1.  编写第一个函数,函数接收姓名和年龄,如果年龄
+不在1到120之间,产生ValueError异常
+2.  编写第二个函数,函数接收姓名和年龄,如果年龄
+不在1到120之间,产生断言异常
+
+
+
+def set_age(name, age):
+    if not 0 < age < 120:
+        raise ValueError('年龄超过范围')
+    print("%s is %d years old" % (name, age))
+
+def set_age2(name, age):
+    assert 0 < age < 120, '年龄超过范围'
+    print("%s is %d years old" % (name, age))
+
+if __name__ == '__main__':
+    set_age('zhangsan', 20)
+    set_age2('lisi', 200)
+
+
+OS相关模块
+
+import os
+
+os.getcwd()  # 显示当前路径
+os.listdir()  # ls -a
+os.listdir('/tmp')  # ls -a /tmp
+os.mkdir('/tmp/mydemo')  # mkdir /tmp/mydemo
+os.chdir('/tmp/mydemo')  # cd /tmp/mydemo
+os.listdir()
+os.mknod('test.txt')  # touch test.txt
+os.symlink('/etc/hosts', 'zhuji')  # ln -s /etc/hosts zhuji
+os.path.isfile('test.txt')  # 判断test.txt是不是文件
+os.path.islink('zhuji')  # 判断zhuji是不是软链接
+os.path.isdir('/etc')
+os.path.exists('/tmp')  # 判断是否存在
+os.path.basename('/tmp/abc/aaa.txt') #返回aaa.txt
+os.path.dirname('/tmp/abc/aaa.txt')	#获取当前文件的上一层目录'/tmp/abc'
+os.path.split('/tmp/abc/aaa.txt')	#('/tmp/abc', 'aaa.txt')
+os.path.join('/home/tom', 'xyz.txt')
+os.path.abspath('test.txt')  # 返回当前目录test.txt的绝对路径
+
+
+
+pickle模块
+
+
+pickle模块简介
+•  把数据写入文件时,常规的文件方法只能把字符串对象写入。其他数据需先转换成字符串再写入文件 。
+•  python提供了一个标准的模块,称为pickle。使用它可以在一个文件中储存任何python对象,
+之后又可以把它完整无缺地取出来
+
+
+import pickle
+"""以前的文件写入，只能写入字符串，如果希望把任意数据对象(数字、列表等)写入文件，
+取出来的时候数据类型不变，就用到pickle了
+"""
+
+# shop_list = ["eggs", "apple", "peach"]
+# with open('/tmp/shop.data', 'wb') as fobj:
+#     pickle.dump(shop_list, fobj)
+
+with open('/tmp/shop.data', 'rb') as fobj:
+    mylist = pickle.load(fobj)
+
+print(mylist[0], mylist[1], mylist[2])
+
+
+案例7:记账程序
+1.  假设在记账时,有一万元钱
+2.  无论是开销还是收入都要进行记账
+3.  记账内容包括时间、金额和说明等
+4.  记账数据要求永久存储
+
+自己写的
+
+import pickle
+import time
+
+atime = time.strftime("%Y%m%d")
+menu = '''(0) 收入记账
+(1) 开销记账
+(2) 查询
+(3) 退出
+请输入你的选择(0/1/2/3)'''
+def income() :
+    money = int(input('收入金额（元）：  '))
+    comment = input('说明： ')
+    with open('/tmp/wallet','rb') as fobj :
+        balance = pickle.load(fobj)
+    balance += money
+    with open('/tmp/wallet','wb') as fobj :
+        pickle.dump(balance,fobj)
+    with open('/tmp/account_book','a') as fobj :
+        fobj.writelines([atime,'\t',str(money),'\t0\t',str(balance),'\t',comment,'\n'])
+def custom() :
+    money = int(input('开销金额（元）：  '))
+    comment = input('说明： ')
+    with open('/tmp/wallet','rb') as fobj :
+        balance = pickle.load(fobj)
+    balance -= money
+    with open('/tmp/wallet','wb') as fobj :
+        pickle.dump(balance,fobj)
+    with open('/tmp/account_book','a') as fobj :
+        fobj.writelines([atime,'\t','0\t',str(money),'\t',str(balance),'\t',comment,'\n'])
+
+def select() :
+    with open('/tmp/account_book') as fobj :
+        print(fobj.read())
+def show_menu() :
+    cmds = {'0': income, '1': custom, '2': select, '3': exit}
+    while True:
+        choice = input(menu).strip()[0]
+        if choice not in '0123' :
+            print('输入有误,请重试')
+            continue
+        cmds[choice]()
+if __name__ == '__main__':
+    show_menu()
+
+
+
+老师：
+
+先写框架：
+
+import pickle
+import os
+import time
+
+def cost(wallet,record) :
+    amount = int(input('amount: '))
+    comment = input('comment:  ')
+    date = time.strftime('%Y-%m-%d')
+    with open(wallet, 'rb') as fobj :
+        balance = pickle.load(fobj) - amount
+    with open(wallet,'wb') as fobj :
+        pickle.dump(balance,fobj)
+    with open(record,'a') as fobj :
+        fobj.write(
+            '%-12s%-8s%-8s%-10s%-20s\n' % (date,amount,'',balance,comment)
+        )
+
+def save(wallet,record) :
+    amount = int(input('amount: '))
+    comment = input('comment:  ')
+    date = time.strftime('%Y-%m-%d')
+    with open(wallet, 'rb') as fobj :
+        balance = pickle.load(fobj) + amount
+    with open(wallet,'wb') as fobj :
+        pickle.dump(balance,fobj)
+    with open(record,'a') as fobj :
+        fobj.write(
+            '%-12s%-8s%-8s%-10s%-20s\n' % (date,'',amount,balance,comment)
+        )
+
+def query(wallet,record) :
+    print('%-12s%-8s%-8s%-10s%-20s' % ('date','cost','save','balance','comment'))
+    with open(record) as fobj :
+        for line in fobj :
+            print(line,end='') #fobj打开的是带有\n的,print默认也有\n,所以这也要去掉一个\n
+    with open(wallet,'rb') as fobj :
+        balance = pickle.load(fobj)
+    print('Latest Balance: %d' % balance)
+
+
+def show_menu() :
+    cmds = {'0': cost, '1': save, '2': query}
+    promt = '''(0) cost 
+(1) save
+(2) query
+(3) exit
+Please input your choice(0/1/2/3):'''
+    wallet = 'wallet.data'
+    record = 'record.txt'
+    if not os.path.exists(wallet) :
+        with open(wallet,'wb') as fobj :
+            pickle.dump(10000,fobj)
+
+    while True:
+        try :
+            choice = input(promt).strip()[0]
+        except IndexError :
+            continue
+        except (KeyboardInterrupt,EOFError) :
+            print()
+            choice = '3'
+
+        if choice not in '0123' :
+            print('Invalid input.Try again.')
+            continue
+        if choice == '3' :
+            break
+        cmds[choice](wallet,record)
+
+if __name__ == '__main__':
+    show_menu()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

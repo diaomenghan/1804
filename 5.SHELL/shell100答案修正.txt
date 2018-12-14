@@ -1,0 +1,15 @@
+
+第五题：
+#!/bin/bash
+while :
+do
+	disk=`df | awk '/\/$/{print $4}'`
+	mem=`free | awk '/Mem/{print $4}'`
+	if [[ $disk -lt 1024000 || $mem -lt 512000 ]];then
+		mail -s Warning root << EOF
+		资源不足
+EOF
+	exit
+	fi
+done &
+

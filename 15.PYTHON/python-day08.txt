@@ -1,0 +1,673 @@
+
+
+Python开发进阶
+
+DAY04
+
+re模块
+正则表达式
+
+匹配单个字符
+记号			说 明
+. 			匹配任意字符(换行符除外)
+[...x-y...]		匹配字符组里的任意字符
+[^...x-y...]	匹配不在字符组里的任意字符
+\d 			匹配任意数字,与[0-9]同义
+\D			匹配非数字
+\w 			匹配任意数字字母字符,与[0-9a-zA-Z_]同义
+\W			匹配非0-9a-zA-Z_的
+\s 			匹配空白字符,与[ \r\v\f\t\n]同义
+
+
+
+
+匹配一组字符
+记号			说 明
+literal 		匹配字符串的值
+re1|re2 		匹配正则表达式re1或re2
+* 			匹配前面出现的正则表达式零次或多次
++ 			匹配前面出现的正则表达式一次或多次
+? 			匹配前面出现的正则表达式零次或一次
+{M, N} 		匹配前面出现的正则表达式至少M次最多N次
+
+
+其他元字符
+记号			说 明
+^ 			匹配字符串的开始
+$ 			匹配字符串的结尾
+\b 			匹配单词的边界
+() 			对正则表达式分组
+\nn 			匹配已保存的子组
+
+贪婪匹配
+•  *、+和?都是贪婪匹配操作符,在其后加上?可以取消其贪婪匹配行为
+•  正则表达式匹配对象通过groups函数获取子组
+>>>	data = 'My phone number is: 150888899999'	
+>>>	m = re.search('.+(\d+)',	data)	
+>>>	print	m.groups()
+('9',)	
+>>>		
+>>>	m = re.search('.+?(\d+)', data)	
+>>>	m.groups()	
+('150888899999',)	
+
+核心函数和方法
+
+match函数
+•  尝试用正则表达式模式从字符串的开头匹配,如果匹配成功,则返回一个匹配对象;否则返回None
+>>> import re	
+>>> m = re.match('foo','food')	 #成功匹配	
+>>>	print(m)
+<_sre.SRE_Match object; span=(0,3),match='foo'>	
+>>>
+>>> m = re.match(‘foo’, ‘seafood’)	#未能匹配	
+>>>	print(m)	
+None	
+
+
+search函数
+•  在字符串中查找正则表达式模式的第一次出现,如果
+匹配成功,则返回一个匹配对象;否则返回None
+>>>	import re	
+>>>	m = re.search('foo', 'food')	
+>>>	print(m)	
+<_sre.SRE_Match object; span=(0, 3),	match='foo'>	
+>>>		
+>>>	m	=	re.search(‘foo’,	‘seafood’)						#可以匹配在字符中间的模式	
+>>>	print(m)	
+<_sre.SRE_Match object; span=(3, 6), match='foo'>	
+
+
+group方法
+•  使用match或search匹配成功后,返回的匹配对象可
+以通过group方法获得匹配内容
+>>>	import re	
+>>>	m = re.match('foo', 'food')	
+>>>	print(m.group())	
+foo	
+	
+>>>	m = re.search('foo', 'seafood')	
+>>>	m.group()	
+'foo'	
+
+findall函数
+•  在字符串中查找正则表达式模式的所有(非重复)出现;返回一个匹配对象的列表
+>>>	import re	
+>>>	m = re.search('foo', 'seafood is food')	
+>>>	print(m.group())				#search只匹配模式的第一次出现	
+foo	
+>>>		
+>>>	m = re.findall(‘foo’, ‘seafood is food’)		#获得全部的匹配项	
+>>>	print(m)	
+['foo',	'foo']	
+
+
+finditer函数
+•  和findall()函数有相同的功能,但返回的不是列表而是迭代器;对于每个匹配,该迭代器返回一个匹配对象
+>>>	import re	
+>>>	m = re.finditer('foo', 'seafood is food')	
+>>>	for item in m:	
+...		print(item.group())	
+...		
+foo	
+foo	
+
+compile函数
+•  对正则表达式模式进行编译,返回一个正则表达式对象
+•  不是必须要用这种方式,但是在大量匹配的情况下,可以提升效率
+>>>	import re
+>>>	paV = re.compile('foo')	
+>>>	m = paV.match('food')	
+>>>	print(m.group())	
+foo	
+
+
+split方法
+•  根据正则表达式中的分隔符把字符分割为一个列表,
+并返回成功匹配的列表
+•  字符串也有类似的方法,但是正则表达式更加灵活
+>>>	import re #使用.和 -作为字符串的分隔符	
+>>>	mylist = re.split('\.|-',	'hello-world.data')	按照指定的符号分离，输出为列表
+>>>	print(mylist)	
+['hello', 'world','data']
+
+sub方法
+•  把字符串中所有匹配正则表达式的地方替换成新的字符串
+>>>	import re	
+>>>	m = re.sub('X', 'Mr. Smith', 'aVn: X\nDear X')	
+>>>	print(m)	
+aVn:	Mr. Smith	
+Dear	Mr. Smith
+
+
+
+
+import re
+
+m = re.match('f..', 'food')  # 匹配到返回对象
+print(re.match('f..', 'seafood'))  # 匹配不到返回None
+m.group()  # 返回匹配的值
+m = re.search('f..', 'seafood')
+m.group()
+re.findall('f..', 'seafood is food')  # 返回所有匹配项组成的列表
+
+result = re.finditer('f..', 'seafood is food')  # 返回匹配对象组成的迭代器
+for m in result:  # 从迭代器中逐个取出匹配对象
+    print(m.group())
+
+re.sub('f..', 'abc', 'fish is food')
+re.split('\.|-', 'hello-world.tar.gz')  # 用.和-做切割符号
+
+patt = re.compile('f..')  # 先把要匹配的模式编译，提升效率
+m = patt.search('seafood')  # 指定在哪个字符串中匹配
+m.group()
+
+
+
+案例1:分析apache访问日志
+•  编写一个apche日志分析脚本
+1.  统计每个客户端访问apache服务器的次数
+2.  将统计信息通过字典的方式显示出来
+3.  分别统计客户端是Firefox和MSIE的访问次数
+4.  分别使用函数式编程和面向对象编程的方式实现
+
+
+函数式编程
+import re
+
+def count_patt(fname,patt):
+    result = {}
+    cpatt = re.compile(patt)
+    
+    with open(fname) as fobj :
+        for line in fobj:
+            m = cpatt.search(line)  #如果匹配不到,返回none
+            if m:
+                key = m.group()
+                result[key] = result.get(key, 0) +1
+    return result
+
+
+if __name__ == '__main__':
+    fname = 'access_log'
+    ip = '^(\d+\.){3}\d+'
+    print(count_patt(fname,ip))
+    br = 'Firefox|MSIE|Chrome'
+    print(count_patt(fname,br))
+
+
+
+面向对象编程
+
+import re
+from collections import Counter
+
+class anylize:
+    def __init__(self,fname):
+        self.fname = fname
+
+    def count_patt(self,patt):
+        cpatt = re.compile(patt)
+        result = Counter()
+        with open(self.fname) as fobj:
+            for line in fobj:
+                m = cpatt.search(line)
+                if m:
+                    result.update([m.group()])
+
+        return result
+
+if __name__ == '__main__':
+    A=anylize('access_log')
+    ip = '^(\d+\.){3}\d+'
+    br = 'Firefox|MSIE|Chrome'
+    print(A.count_patt(ip).most_common(3))
+    print(A.count_patt(br))
+
+
+completions的Counter模块
+>>> c = Counter('abcdeabcdabcaba')  # count elements from a string
+
+    >>> c.most_common(3)                # three most common elements
+    [('a', 5), ('b', 4), ('c', 3)]
+    >>> sorted(c)                       # list all unique elements
+    ['a', 'b', 'c', 'd', 'e']
+    >>> ''.join(sorted(c.elements()))   # list elements with repetitions
+    'aaaaabbbbcccdde'
+    >>> sum(c.values())                 # total of all counts
+    15
+
+    >>> c['a']                          # count of letter 'a'
+    5
+    >>> for elem in 'shazam':           # update counts from an iterable
+    ...     c[elem] += 1                # by adding 1 to each element's count
+    >>> c['a']                          # now there are seven 'a'
+    7
+    >>> del c['b']                      # remove all 'b'
+    >>> c['b']                          # now there are zero 'b'
+    0
+
+    >>> d = Counter('simsalabim')       # make another counter
+    >>> c.update(d)                     # add in the second counter
+    >>> c['a']                          # now there are nine 'a'
+    9
+
+    >>> c.clear()                       # empty the counter
+    >>> c
+    Counter()
+
+    Note:  If a count is set to zero or reduced to zero, it will remain
+    in the counter until the entry is deleted or the counter is cleared:
+
+    >>> c = Counter('aaabbc')
+    >>> c['b'] -= 2                     # reduce the count of 'b' by two
+    >>> c.most_common()                 # 'b' is still in, but its count is zero
+    [('a', 3), ('c', 1), ('b', 0)]
+
+
+socket模块
+
+什么是C/S架构
+•  服务器是一个软件或硬件,用于提供客户需要的“服务”
+•  硬件上,客户端常见的就是平时所使用的PC机,服务器常见的有联想、DELL等厂商生产的各种系列服务器
+•  软件上,服务器提供的服务主要是程序的运行,数据的发送与接收、合并、升级或其它的程序或数据的操作
+
+套接字
+•  套接字是一种具有“通讯端点”概念的计算机网络数据结构
+•  套接字起源于20世纪70年代加利福尼亚大学伯克利分校版本的Unix
+•  一种套接字是Unix套接字,其“家族名”为AF_UNIX
+•  另一种套接字是基于网络的,“家族名”为AF_INET
+•  如果把套接字比做电话的插口,那么主机与端口就像区号与电话号码的一对组合
+
+面向连接与无连接
+•  无论你使用哪一种地址家族,套接字的类型只有两种。一种是面向连接的套接字,另一种是无连接的套接字
+•  面向连接的主要协议就是传输控制协议TCP,套接字类型为SOCK_STREAM
+•  无连接的主要协议是用户数据报协议UDP,套接字类型为SOCK_DGRAM
+•  python中使用socket模块中的socket函数实现套接字的创建
+
+socket函数与方法
+创建TCP服务器
+•  创建TCP服务器的主要步骤如下:
+1.  创建服务器套接字:s = socket.socket()
+2.  绑定地址到套接字:s.bind()
+3.  启动监听:s.listen()
+4.  接受客户连接:s.accept()
+5.  与客户端通信:recv()/send()
+6.  关闭套接字:s.close()
+
+import socket
+
+host = ''  # 表示本机所有地址 0.0.0.0
+port = 12345  # 应该大于1024
+addr = (host, port)
+s = socket.socket()  # 默认值就是基于tcp的网络套接字
+# 设置选项,程序结束之后可以立即再运行,否则要等60秒
+s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind(addr)  # 绑定地址到套接字
+s.listen(1)  # 启动侦听进程
+cli_sock, cli_addr= s.accept()
+print('Client connect from :', cli_addr)
+print(cli_sock.recv(1024))  # 一次最多读1024字节数据
+cli_sock.send(b'I 4 C U\r\n')   # 发送的数据要求是bytes类型
+cli_sock.close()
+s.close()
+
+#yum -y install telnet
+#telnet 127.0.0.1 12345
+
+
+
+
+import socket
+
+host = ''  
+port = 12345  
+addr = (host, port)
+s = socket.socket() 
+s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind(addr) 
+s.listen(1)  
+while True:
+    cli_sock, cli_addr= s.accept()
+    print('Client connect from :', cli_addr)
+    while True:
+        data = cli_sock.recv(1024)  
+        if data.strip() == b'end' :
+            break
+        print(data.decode('utf8'))    把bytes类型转换成str类型
+        data = input('> ') + '\r\n'		网络数据一般都要加上\r\n
+        cli_sock.send(data.encode('utf8'))  把str类型转换成bytes类型
+    cli_sock.close()
+s.close()
+
+
+创建TCP客户端
+•  创建TCP客户端的步骤主要如下:
+1.  创建客户端套接字:cs = socket.socket()
+2.  尝试连接服务器:cs.connect()
+3.  与服务器通信:cs.send()/cs.recv()
+4.  关闭客户端套接字:cs.close()
+
+import socket
+
+host = '192.168.1.254'
+port = 12345
+addr = (host, port)
+
+c = socket.socket()
+c.connect(addr)
+
+while True:
+    data = input('> ') + '\r\n'
+    c.send(data.encode('utf8'))   #服务器收到end结束,所以要先发送再判断
+    if data.strip() == 'end' :
+        break
+    data = c.recv(1024)
+    print(data.decode('utf8'))
+
+c.close()
+
+案例3:创建TCP时间戳服务端
+
+
+import socket
+from time import strftime
+
+class TcpTimeServer:
+    def __init__(self, host='', port=12345):
+        self.addr = (host, port)
+        self.serv = socket.socket()
+        self.serv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.serv.bind(self.addr)
+        self.serv.listen(1)
+
+    def chat(self, c_sock):
+        while True:
+            data = c_sock.recv(1024)
+            if data.strip() == b'quit':
+                break
+            data = '[%s] %s' % (strftime('%H:%M:%S'), data.decode('utf8'))
+            c_sock.send(data.encode('utf8'))
+        c_sock.close()
+
+    def mainloop(self):
+        while True:
+            cli_sock, cli_addr = self.serv.accept()
+            self.chat(cli_sock)
+
+        self.serv.close()
+
+if __name__ == '__main__':
+    s = TcpTimeServer()
+    s.mainloop()
+
+
+
+
+
+创建UDP服务器
+•  创建UDP服务器的主要步骤如下:
+1.  创建服务器套接字:s = socket.socket()
+2.  绑定服务器套接字:s.bind()
+3.  接收、发送数据:s.recvfrom()/ss.sendto()
+4.  关闭套接字:s.close()
+
+import socket
+from time import strftime
+
+host = ''
+port = 12345
+addr = (host, port)
+s = socket.socket(type=socket.SOCK_DGRAM)
+s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind(addr)
+
+while True:
+    data, cli_addr = s.recvfrom(1024)
+    clock = strftime('%H:%M:%S')
+    data = data.decode('utf8')
+    data = '[%s] %s' % (clock, data)
+    s.sendto(data.encode('utf8'), cli_addr)
+
+s.close()
+
+
+
+
+
+
+创建UDP客户端
+•  创建UDP客户端的步骤主要如下:
+1.  创建客户端套接字:cs = socket.socket()
+2.  与服务器通信:cs.sendto()/cs.recvfrom()
+3.  关闭客户端套接字:cs.close()
+
+import socket
+
+host = '192.168.4.254'
+port = 12345
+addr = (host, port)
+
+c = socket.socket(type=socket.SOCK_DGRAM)
+
+while True:
+    data = input('> ')
+    if data.strip() == 'quit':
+        break
+    c.sendto(data.encode('utf8'), addr)
+    print(c.recvfrom(1024)[0].decode('utf8'))
+    # print(c.recvfrom(1024))
+
+c.close()
+
+
+
+
+
+homework
+
+
+ls -R 递归查找
+
+import os
+import sys
+
+def ls_R(path):
+    output = os.listdir(path)
+    if output:
+        print("%s :" % path)
+        print('%s\n'% output)
+    for i in output:
+        newpath = os.path.join(path,i)
+        if os.path.isdir(newpath):
+            ls_R(newpath)
+
+if __name__ == '__main__':
+    path = sys.argv[1]
+    ls_R(path)
+
+老师 代码：
+import os
+import sys
+
+def list_files(path):
+    if os.path.isdir(path):
+        print(path + ':')
+        content = os.listdir(path)
+        print(content)
+        for fname in content:
+            fname = os.path.join(path, fname)
+            list_files(fname)
+
+if __name__ == '__main__':
+    list_files(sys.argv[1])
+
+案例1:备份程序
+1.  需要支持完全和增量备份
+2.  周一执行完全备份
+3.  其他时间执行增量备份
+4.  备份文件需要打包为tar文件并使用gzip格式压缩
+
+import tarfile
+import hashlib
+import os
+from time import strftime
+
+class Backup:
+    def __init__(self,fname):
+        self.fname = fname
+        self.date = strftime('%Y-%m-%d')
+        self.week = strftime('%w')
+        self.bdir = '/backup/%s' % self.date
+        self.bdirmd5 = '/backup/mon.md5'		#
+
+    def fullbackup(self):
+        if self.week == '1':
+            with tarfile.open('%sfull.tar.gz'% self.bdir,'w:gz') as tar :
+                tar.add(self.fname)
+            with open(self.bdirmd5, 'a') as fobj:
+                for i in os.listdir(self.fname):
+                    path = os.path.join(self.fname,i)
+                    m = hashlib.md5(path.encode('utf8'))
+                    fobj.write('%s\r\n'% m.hexdigest())
+    def extrabackup(self):
+        if self.week != '1':
+            tmp = []
+            with open(self.bdirmd5) as fobj:
+                for line in fobj:
+                    tmp.append(line.strip())
+            with tarfile.open('%sextra.tar.gz'% self.bdir,'w:gz') as tar:
+                for i in os.listdir(self.fname):
+                    path = os.path.join(self.fname,i)
+                    mnew = hashlib.md5(path.encode('utf8'))
+                    if mnew.hexdigest() not in tmp :
+                        tar.add(path)
+                        with open(self.bdirmd5, 'a') as fobj:
+                            fobj.write('%s\r\n'% mnew.hexdigest())
+if __name__ == '__main__':
+    backup = Backup('/tmp/httpd') # rm -rf /tmp/*, cp -r /etc/httpd /tmp/
+    backup.fullbackup()
+    backup.extrabackup()
+
+老师代码：
+import time
+import os
+import tarfile
+import hashlib
+import pickle
+
+def check_md5(fname):
+    m = hashlib.md5()
+    with open(fname, 'rb') as fobj:
+        while True:
+            data = fobj.read(4096)
+            if not data:
+                break
+            m.update(data)
+    return m.hexdigest()
+
+def full_backup(src_dir, dst_dir, md5file):
+    fname = os.path.basename(src_dir.rstrip('/'))
+    fname = '%s_full_%s.tar.gz' % (fname, time.strftime('%Y%m%d'))
+    fname = os.path.join(dst_dir, fname)
+    md5dict = {}
+
+    tar = tarfile.open(fname, 'w:gz')
+    tar.add(src_dir)
+    tar.close()
+
+    for path, folders, files in os.walk(src_dir):
+        for each_file in files:
+            key = os.path.join(path, each_file)
+            md5dict[key] = check_md5(key)
+
+    with open(md5file, 'wb') as fobj:
+        pickle.dump(md5dict, fobj)
+
+
+def incr_backup(src_dir, dst_dir, md5file):
+    fname = os.path.basename(src_dir.rstrip('/'))
+    fname = '%s_incr_%s.tar.gz' % (fname, time.strftime('%Y%m%d'))
+    fname = os.path.join(dst_dir, fname)
+    md5dict = {}
+
+    with open(md5file, 'rb') as fobj:
+        oldmd5 = pickle.load(fobj)
+
+    for path, folders, files in os.walk(src_dir):
+        for each_file in files:
+            key = os.path.join(path, each_file)
+            md5dict[key] = check_md5(key)
+
+    with open(md5file, 'wb') as fobj:
+        pickle.dump(md5dict, fobj)
+
+    tar = tarfile.open(fname, 'w:gz')
+    for key in md5dict:
+        if oldmd5.get(key) != md5dict[key]:
+            tar.add(key)
+    tar.close()
+
+if __name__ == '__main__':
+    # mkdir /tmp/demo; cp -r /etc/security /tmp/demo
+    src_dir = '/tmp/demo/security'
+    dst_dir = '/var/tmp/backup'   # mkdir /var/tmp/backup
+    md5file = '/var/tmp/backup/md5.data'
+    if time.strftime('%a') == 'Mon':
+        full_backup(src_dir, dst_dir, md5file)
+    else:
+        incr_backup(src_dir, dst_dir, md5file)
+
+
+
+
+os.walk(top, topdown=True, onerror=None, followlinks=False)
+遍历目录树，自顶向下或自底向上生成目录树下的文件名。对根目录top（包括根目录top本身）中的每个目录，它都会yield一个3元元组(dirpath, dirnames, filenames)。
+
+dirpath是一个字符串，为目录路径。dirnames是dirpath中子目录的名称列表（不包括'.'和'..')。文件名是dirpath中非目录文件的名称列表。注意，列表中的名称不包含路径部分。要获得dirpath 中的文件或目录的完整路径(以 top开头), 请使用os.path.join(dirpath, name).
+
+如果可选参数topdown为True或未指定，则在生成其任何子目录的三元组tuple之前生成其本身的三元组tuple。（简言之就是自上而下遍历）如果topdown是False，则在生成所有子目录的三元组之后生成其本身的三元组（即自下而上生成）。无论topdown的值如何，在生成目录及其子目录的元组之前，都会检索子目录列表。
+
+当topdown为True时，调用者可以就地修改dirnames列表（也许使用del ），并且walk()仅会递归到名称保留在dirnames中的子目录；这可以用来修剪搜索，强制访问的特定顺序，甚至可以通知walk()关于调用者在恢复之前创建或重命名的目录walk()再次。当topdown为False时，修改dirnames对walk的行为没有影响，因为在自底向上模式下，dirnames 在dirpath本身生成之前生成。
+
+默认情况下，来自listdir()的错误将被忽略。如果指定了可选参数onerror，它应该是一个函数；it will be called with one argument, an OSError instance.它可以报告错误以继续步行，或者提出异常以中止步行。请注意，文件名可用作异常对象的filename属性。
+
+默认情况下，walk()不会走向解析为目录的符号链接。在支持它们的系统上，设置followlinks为True以访问由符号链接指向的目录。
+
+注意请注意，如果链接指向其自身的父目录，则将followlinks设置为True可导致无限递归。walk()不会跟踪它已经访问的目录。
+注意如果传递相对路径名，请不要在walk()重新开始之间更改当前工作目录。walk()永远不会更改当前目录，并假定它的调用者也不会。
+此示例显示非目录文件在起始目录下的每个目录中占用的字节数，但不显示在任何CVS子目录下：
+
+import os
+from os.path import join, getsize
+for root, dirs, files in os.walk('python/Lib/email'):
+    print(root, "consumes", end=" ")
+    print(sum(getsize(join(root, name)) for name in files), end=" ")
+    print("bytes in", len(files), "non-directory files")
+    if 'CVS' in dirs:
+        dirs.remove('CVS')  # don't visit CVS directories
+In the next example (simple implementation of shutil.rmtree()), walking the tree bottom-up is essential, rmdir() doesn’t allow deleting a directory before the directory is empty:
+
+# Delete everything reachable from the directory named in "top",
+# assuming there are no symbolic links.
+# CAUTION:  This is dangerous!  For example, if top == '/', it
+# could delete all your disk files.
+import os
+for root, dirs, files in os.walk(top, topdown=False):
+    for name in files:
+        os.remove(os.path.join(root, name))
+    for name in dirs:
+        os.rmdir(os.path.join(root, name))
+Changed in version 3.5: This function now calls os.scandir() instead of os.listdir(), making it faster by reducing the number of calls to os.stat().
+
+
+
+
+
+
+
+
+
+
+
+
