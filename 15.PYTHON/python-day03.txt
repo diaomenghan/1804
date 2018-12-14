@@ -1,0 +1,563 @@
+
+Python开发入门
+
+for循环
+
+
+for循环语法结构
+•  python中的for接受可迭代对象(例如序列或迭代器)作为其参数,每次迭代其中一个元素
+for iter_var in iterable:	
+    suite_to_repeat	
+•  与while循环一样,支持break、continue、else语句
+•  一般情况下,循环次数未知采用while循环,循环次数已知,采用for循环
+
+for循环的范围可以是字符串、列表、元组、字典、文件
+
+
+astr = 'hello'
+alist = [10, 20, 30]
+atuple = ('bob', 'tom', 'alice')
+adict = {'name': 'john', 'age': '23'}
+
+for ch in astr :
+    print(ch)
+for i in alist :
+    print(i)
+for name in atuple :
+    print(name)
+for key in adict :
+    print('%s:%s' %(key,adict[key]))
+
+
+range函数
+•  for循环常与range函数一起使用
+•  range函数提供循环条件，
+•  range函数的完整语法为:
+range(start, end, step =1)  不包含末尾，默认开头是0，步长是1
+
+list函数把字符串转换成列表
+
+s = 'Python2best'
+s2 = []
+for ch in s :
+    s2.append(ch)
+print(s2)
+
+print(list(s))
+
+range(10)   [0,1,2,3,4,5,6,7,8,9]
+range(6,11) [6,7,8,9,10]
+range(1,10,2) [1,3,5,7,9]
+range(10,3,-1) [10,9,8,7,6,5,4]
+
+sum100 = 0
+for i in range(1,101) :
+    sum100 += i
+print(sum100)
+
+案例1:斐波那契数列
+1.  斐波那契数列就是某一个数,总是前两个数之和,
+比如0,1,1,2,3,5,8
+2.  使用for循环和range函数编写一个程序,计算有10
+个数字的斐波那契数列
+3.  改进程序,要求用户输入一个数字,可以生成用户
+需要长度的斐波那契数列
+
+fib=[0,1]
+num = int(input('请输入一个数字： '))
+
+for i in range(len(fib),num) :
+    fib.append(fib[i-2] + fib[i-1])
+print(fib)
+
+
+
+案例2:九九乘法表
+1.  创建mtable.py程序
+2.  乘序运行后,可以在屏幕上打印出九九乘法表课
+3.  修改程序,由用户输入数字,可打印任意数字的乘法表
+num = int(input('请输入要实现n乘法表：'))
+for i in range(1,num+1) :
+    for j in range(1,i+1) :
+        print('%s*%s=%s' % (i,j,i*j),end='\t')
+    print()
+
+打印象棋
+for i in range(9) :
+    for j in range(9):
+        if (i+j+1)%2 :
+            print('\033[40;1m  \033[0m',end='')
+        else:
+            print('  ',end='')
+    print()
+
+列表解析
+•  它是一个非常有用、简单、而且灵活的工具,可以用来动态地创建列表
+•  语法:
+  [expr for iter_var in iterable]	
+•  这个语句的核心是for循环,它迭代iterable对象的所有条目
+•  expr应用于序列的每个成员,最后的结果值是该表达式产生的列表
+
+[10+5]
+[10+5 for i in range(10)]
+[10+i for i in range(10)]
+[10+i for i in range(10) if i % 2 == 1]
+[10+i for i in range(10) if i % 2]
+['192.168.1.%s' % i for i in range(1,20)]
+
+文件对象
+
+文件打开方法
+
+open及file内建函数
+•  作为打开文件之门的“钥匙”,内建函数open()以及
+file()提供了初始化输入/输出(I/O)操作的通用接口
+•  成功打开文件后时候会返回一个文件对象,否则引发一个错误
+•  open()方法和file()方法可以完全相互替换
+•  基本语法:
+file_object	= open(file_name,	access_mode='r',	buffering=-1)	
+
+
+文件对象访问模式
+文件模式		操作
+r 			以读方式打开(文件不存在则报错)
+w 			以写方式打开(文件存在则清空,不存在则创建)
+a 			以追加模式打开(必要时创建新文件)
+r+ 			以读写模式打开(参见r)
+w+ 			以读写模式打开(参见w)
+a+ 			以读写模式打开(参见a)
+b 			以二进制模式打开
+
+文件操作的三个步骤：打开、读写、关闭
+
+read方法
+•  read()方法用来直接读取字节到字符串中,最多读取给定数目个字节，把所有内容读取出来
+•  如果没有给定size参数(默认值为-1)或者size值为负,文件将被读取直至末尾
+>>> data = fobj.read()	
+>>> print(data)
+
+readline方法
+•  读取打开文件的一行(读取下个行结束符之前的所有字节)
+•  然后整行,包括行结束符,作为字符串返回
+•  它也有一个可选的size参数,默认为-1,代表读至行结束符
+•  如果提供了该参数,那么在超过size个字节后会返回不完整的行
+>>> data = fobj.readline()	
+>>> print(data)	
+
+readlines方法
+•  readlines()方法读取所有(剩余的)行然后把它们作为一个字符串列表返回
+>>>	data	= fobj.readlines()	
+>>>	print(data)	
+
+
+随着读写的进行，文件指针向后移动。
+因为第一个f.read()已经把文件指针移动到结尾了，所以再读就没有数据了
+所以再执行data = f.read()时，这里为空
+
+>>> f = open('/tmp/passwd')
+>>> data = f.read()
+>>> print(data)
+>>> f.close()
+硬盘的一个block 在分区后，默认是4k 也就是4096个字节
+所以在读取的时候，建议使用 f.read(4096)
+
+f = open('/tmp/passwd')
+data = f.read(4)  # 读4字节
+f.readline()  # 读到换行符\n结束
+f.readlines()  # 把每一行数据读出来放到列表中
+f.close()
+
+
+
+文件迭代
+•  如果需要逐行处理文件,可以结合for循环迭代文件
+•  迭代文件的方法与处理其他序列类型的数据类似
+>>>	fobj	= open('star.py')	
+>>>	for eachLine in fobj:	
+--		print(eachLine, end='')	
+
+f = open('/tmp/passwd')
+for line in f:
+    print(line,end='')    因为默认read的时候每行都有\n换行，所以这里把print默认的换行取消就可以了
+f.close()
+
+#######################################
+f = open('图片地址', 'rb')  # 打开非文本文件要加参数b
+f.read(4096)
+f.close()
+
+
+
+
+文件输出
+
+write方法
+
+•  write()内建方法功能与read()和readline()相反。它把含有文本数据或二进制数据块的字符串写入到文件中去
+•  写入文件时,不会自动添加行结束标志,需要程序员手工输入
+>>> fobj.write('Hello World!\n')	
+13
+
+writelines方法
+•  和readlines()一样,writelines()方法是针对列表的操作
+•  它接受一个字符串列表作为参数,将它们写入文件
+•  行结束符并不会被自动加入,所以如果需要的话,必须在调用writelines()前给每行结尾加上行结束符
+>>>	fobj.writelines(['Hello	World!\n', 'python programing\n'])	
+
+
+f = open('/tmp/myfile','w')	#以w打开文件，如果文件不存在则创建
+f.write('hello world\n')
+f.flush()				#立即将缓存中的数据同步到磁盘
+f.writelines(['2nd line.\n','new line.\n'])
+f.close()				#关闭文件的时候，数据保存到磁盘
+
+
+
+with子句
+•  with语句是用来简化代码的
+•  在将打开文件的操作放在with语句中,代码块结束后,文件将自动关闭
+>>> with open('foo.py') as f:	
+...    data = f.readlines()	
+...
+>>>	f.closed	
+True
+
+
+with open('/tmp/passwd') as f :
+    print(f.readline())
+
+文件内移动
+•  seek(offset[, whence]):移动文件指针到不同的位
+–  offset是相对于某个位置的偏移量
+–  whence的值,0表示文件开头,1表示当前位置,2表示文件的结尾
+•  tell():返回当前文件指针的位置
+如果要使用seek的调用，需要在打开文件时，使用 'rb' 方式打开
+
+
+>>> f = open('/tmp/passwd') 
+>>> f.tell()
+0
+>>> f.read()
+>>> f.tell()
+2525
+>>> f.seek(0,0)
+0
+>>> f.readline()
+>>> f.tell()
+142
+>>> f.close
+
+××××××××××××××××
+>>> f = open('/tmp/hosts','rb')
+>>> f.seek(-2,2)
+569
+>>> f.seek(1,1)
+570
+>>> f.seek(3,0)
+3
+>>> f.tell()
+3
+
+
+
+
+
+
+标准文件
+•  程序一执行,就可以访问三个标准文件
+–  标准输入:一般是键盘,使用sys.stdin
+–  标准输出:一般是显示器缓冲输出,使用sys.stdout
+–  标准错误:一般是显示器的非缓冲输出,使用
+sys.stderr
+>>>	import sys	
+>>>	sys.stdout.write('hello	world!\n')	
+hello	world!	
+>>>	hi = sys.stdin.readline()	
+hello	
+>>>	hi
+'hello\n'	使用input没有\n
+
+>>> sys.stdout.write('haha\n')	#print自带\n
+haha
+5
+>>> sys.stderr.write('haha\n')
+haha
+5
+在命令行界面运行的时候， 上面一个可以  使用 > file
+下面一个可以使用 2> file
+
+
+
+案例3:模拟cp操作
+1.  创建cp.py文件
+2.  将/bin/ls“拷贝”到/root/目录下
+3.  不要修改原始文件
+
+src_fname = '/bin/ls'
+dst_fname = '/root/ls'
+
+src_fobj = open(src_fname,'rb')	因为是二进制文件，要加上b
+dst_fobj = open(dst_fname,'wb')
+
+while True :
+    data = src_fobj.read(4096)		一个block是4096，每次都读这么大，防止文件过大占用资源
+    if not data :				当data都读完了时，是空的，not data就是 True，然后跳出
+        break
+    dst_fobj.write(data)
+
+src_fobj.close()
+dst_fobj.close()
+
+
+函数基本操作
+
+函数基本概念
+•  函数是对程序逻辑进行结构化或过程化的一种编程方
+•  将整块代码巧妙地隔离成易于管理的小块
+•  把重复代码放到函数中而不是进行大量的拷贝,这样既能节省空间,也有助于保持一致性
+•  通常函数都是用于实现某一种功能
+
+创建函数
+•  函数是用def语句来创建的,语法如下:
+def funcOon_name(arguments):	
+    "funcOon_documentaOon_string"	
+    funcOon_body_suite	
+•  标题行由def关键字,函数的名字,以及参数的集合(如果有的话)组成
+•  def子句的剩余部分包括了一个虽然可选但是强烈推荐的文档字串,和必需的函数体
+
+id()查看()内的内存地址
+
+
+def gen_fib() :
+    fib=[0,1]
+    num = int(input('请输入一个数字： '))
+    for i in range(len(fib),num) :
+        fib.append(fib[i-2] + fib[i-1])
+    print(fib)
+
+gen_fib()
+
+调用函数
+•  同大多数语言相同,python用一对圆括号调用函数
+•  如果没有加圆括号,只是对函数的引用
+
+
+函数的返回值
+•  多数情况下,函数并不直接输出数据,而是向调用者返回值
+•  函数的返回值使用return关键字
+•  没有return的话,函数默认返回None
+
+def gen_fib() :
+    fib=[0,1]
+    num = int(input('请输入一个数字： '))
+    for i in range(len(fib),num) :
+        fib.append(fib[i-2] + fib[i-1])
+    return fib  #返回变量的值，不返回变量名字
+a = gen_fib()
+print(a)
+print(gen_fib())
+
+
+定义参数
+•  形式参数
+–  函数定义时,紧跟在函数名后(圆括号内)的参数被称为形式参数,简称形参。由于它不是实际存在变量,
+所以又称虚拟变量
+•  实际参数
+–  在主调函数中调用一个函数时,函数名后面括弧中的参数(可以是一个表达式)称为“实际参数”,简称实参
+
+传递参数
+•  调用函数时,实参的个数需要与形参个数一致
+•  实参将依次传递给形参
+在定义函数时，尽量不要使用input，尽量使用传参，因为数据的输入不一样是从键盘，也可以从文件或者其他
+
+>>>	def foo(x,y):	
+...	  print('x=%d, y=%d' % (x, y))	
+>>>	foo()	
+Traceback	(most	recent call last):	
+		File	"<stdin>", line 1, in <module>	
+TypeError:	foo()	takes	exactly 2 arguments (0 given)	
+>>>	foo(3)
+Traceback (most recent call last):	
+		File	"<stdin>", line 1, in <module>	
+TypeError:	foo()	takes	exactly 2 arguments (1 given)	
+>>>	foo(3, 4)	
+x=3,	y=4	
+
+
+
+def mtable(n):
+    for i in range(1, n + 1):
+        for j in range(1, i + 1):
+            print('%s*%s=%s' % (j, i, i * j), end=' ')
+        print()
+
+mtable(6)
+mtable(9)
+
+
+
+位置参数
+•  与shell脚本类似,程序名以及参数都以位置参数的方式传递给python程序
+•  使用sys模块的argv列表接收
+position_args.py
+
+import sys
+print(sys.argv)
+
+[root@room9pc01 python]# python3 position_args.py 
+['position_args.py']
+[root@room9pc01 python]# python3 position_args.py 1
+['position_args.py', '1']
+[root@room9pc01 python]# python3 position_args.py 1 jlasf
+['position_args.py', '1', 'jlasf']
+[root@room9pc01 python]# python3 position_args.py 1 jlasf 10
+['position_args.py', '1', 'jlasf', '10']
+
+默认参数
+•  默认参数就是声明了默认值的参数
+•  因为给参数赋予了默认值,所以在函数调用时,不向该参数传入值也是允许的
+
+>>> def pstar(n=50) :
+...     print('*' * n)
+... 
+>>> pstar()
+**************************************************
+>>> pstar(30)
+******************************
+
+将函数的位置变量加进去
+copy.py
+
+import sys
+def copy (src_fname,dst_fname) :
+
+    src_fobj = open(src_fname,'rb')
+    dst_fobj = open(dst_fname,'wb')
+
+    while True :
+        data = src_fobj.read(4096)
+        if not data :
+            break
+        dst_fobj.write(data)
+
+    src_fobj.close()
+    dst_fobj.close()
+copy(sys.argv[1],sys.argv[2])
+
+[root@room9pc01 python]# python3 copy.py /tmp/haha /tmp/xx 
+
+
+模块基础
+
+定义模块
+模块基本概念
+•  模块是从逻辑上组织python代码的形式
+•  当代码量变得相当大的时候,最好把代码分成一些有组织的代码段,前提是保证它们的彼此交互
+•  这些代码片段相互间有一定的联系,可能是一个包含数据成员和方法的类,也可能是一组相关但彼此独立的操作函数
+
+创建模块
+•  模块物理层面上组织模块的方法是文件,每一个以.py作为结尾的python文件都是一个模块
+•  模块名称切记不要与系统中已存在的模块重名
+•  模块文件名字去掉后面的扩展名(.py)即为模块名
+
+star.py
+
+hi = 'hello world'
+def pstar(n=50) :
+    print('*' * n)
+
+call_star.py
+
+import star
+print(star.hi)
+star.pstar()
+star.pstar(30)
+[root@room9pc01 python]# python3 call_star.py 
+hello world
+**************************************************
+******************************
+
+
+•  使用import导入模块
+•  模块被导入后,程序会自动生成pyc的字节码文件以提升性能
+•  模块属性通过“模块名.属性”的方法调用
+•  如果仅需要模块中的某些属性,也可以单独导入
+>>>	import sys	
+>>>	import os, string	
+>>>	string.digits	
+'0123456789'	
+>>>	from random import randint	
+>>>	randint(1,10)	
+3	
+
+
+模块加载(load)
+•  一个模块只被加载一次,无论它被导入多少次
+•  只加载一次可以阻止多重导入时代码被多次执行
+•  如果两个文件相互导入,防止了无限的相互加载
+•  模块加载时,顶层代码会自动执行,所以只将函数放入模块的顶层是良好的编程习惯
+
+模块导入的特性
+•  模块具有一个__name__特殊属性
+•  当模块文件直接执行时,__name__的值为'__main__'
+•  当模块被另一个文件导入时,__name__的值就是该模块的名字
+
+foo.py
+
+def pstar(n=50) :
+    print('*' * n)
+if __name__ == '__main__':		这里如果不加，那么在import foo时，会再执行一遍
+    pstar()
+    pstar(30)
+
+[root@room9pc01 python]# python3 foo.py 
+**************************************************
+******************************
+
+>>> import foo
+>>> 
+
+
+
+案例4:生成随机密码
+•  创建randpass.py脚本,要求如下:
+1.  编写一个能生成8位随机密码的程序
+2.  使用random的choice函数随机取出字符
+3.  改进程序,用户可以自己决定生成多少位的密码
+
+
+import random
+import sys
+A = '1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM'
+def cpasswd(n=8) :
+    passwd = ''
+    for i in range(n) :
+        passwd += random.choice(A)
+    return passwd
+if __name__ == '__main__':
+    if len(sys.argv) != 1:
+        print(cpasswd(int(sys.argv[1])))
+    else:
+        print(cpasswd())
+
+
+string的模块可以查看详细信息
+
+import string      
+A = string.ascii_letters + string.digits
+
+在pytcharm 里按住ctrl 点击对应的超链接，可以看到调用的模块的代码
+
+调用 randpasspy
+>>> import randpass
+>>> randpass.cpasswd(3)
+'22X'
+>>> randpass.cpasswd(4)
+'ChLM'
+
+
+
+
+
+
+

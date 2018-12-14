@@ -1,0 +1,561 @@
+
+Python开发进阶
+
+创建函数
+
+def 语句
+•  函数用def语句创建,语法如下:
+def func(on_name(arguments):	
+	"func(on_documenta(on_string"	
+	func(on_body_suite	
+•  标题行由def关键字,函数的名字,以及参数的集合(如果有的话)组成
+•  def子句的剩余部分包括了一个虽然可选但是强烈推荐的文档字串,和必需的函数体前向引用
+•  函数不允许在函数未声明之前对其进行引用或者调用内部函数
+•  在函数体内创建另外一个函数是完全合法的,这种函数叫做内部/内嵌函数
+
+
+调用函数
+
+函数操作符
+•  使用一对圆括号()调用函数,如果没有圆括号,只是
+对函数的引用
+•  任何输入的参数都必须放置在括号中
+
+func_args.py
+
+def get_age(name, age):
+    print('%s is %s years old' % (name, age))
+
+get_age('bob', 25)  # 参数按顺序传递
+get_age(25, 'bob')
+get_age(age=25, name='bob')
+# get_age()  # Error，少参数
+# get_age('bob', 25, 100)  # Error，多参数
+# get_age(age=25, 'bob')  # 语法错误
+# get_age(25, name='bob')  # 错误，参数按顺序传递，name得到多个值
+get_age('bob', age=25)
+
+关键字参数
+•  关键字参数的概念仅仅针对函数的调用
+•  这种理念是让调用者通过函数调用中的参数名字来区分参数
+•  这样规范允许参数缺失或者不按顺序
+
+参数组
+•  python允许程序员执行一个没有显式定义参数的函数
+•  相应的方法是通过一个把元组(非关键字参数)或字
+典(关键字参数)作为参数组传递给函数
+
+tuple_args.py
+
+def func1(*args): # *表示args是个元组
+	print(args)
+
+def func2(**kwargs): ## ** 表示kwargs是个字典
+	print(kwargs)
+def func3(x, y):
+	print(x * y)
+
+def func4(name,age):
+	print('%s is %s years old' % (name, age))
+if __name__ == '__main__':
+	func1()
+	func1(10)
+	func1(10,'bob')
+	func2()
+	func2(name='bob', age=25)
+	func3(*[10,5]) #调用的时候,* 表示拆开后面的数据类型
+	func4(**{'name':'bob', 'age': 25}) # name='bob', age=25
+
+案例1:简单的加减法数学游戏
+1.  随机生成两个100以内的数字
+2.  随机选择加法或是减法
+3.  总是使用大的数字减去小的数字
+4.  如果用户答错三次,程序给出正确答案
+
+
+from random import randint,choice
+
+def add(x,y):
+    return x+y
+def sub(x,y):
+    return x-y
+def exam():
+    cmds = {'+':add, '-':sub}
+    nums = [randint(1,100) for i in range(2)]
+    nums.sort(reverse=True)
+    op = choice('+-')
+    result = cmds[op](*nums)
+    prompt = '%s %s %s = ' % (nums[0],op,nums[1])
+    tries = 0
+
+    while tries < 3:
+        try :
+            answer = int(input(prompt))
+        except :
+            continue
+
+        if answer == result :
+            print('very good!')
+            break
+        else:
+            print('wrong answer.')
+            tries += 1
+    else:
+        print('correct answer is %s' % result)
+
+if __name__ == '__main__':
+    while True:
+        exam()
+        try:
+            yn = input('Continue(y/n)?').strip()[0]
+        except IndexError:
+            continue
+        except (KeyboardInterrupt,EOFError):
+            print()
+            yn = 'n'
+        if yn in 'nN':
+            break
+
+匿名函数
+
+•  python允许用lambda关键字创造匿名函数
+•  匿名是因为不需要以标准的def方式来声明
+•  一个完整的lambda“语句”代表了一个表达式,这
+个表达式的定义体必须和声明放在同一行
+lambda [arg1[, arg2, ... argN]]: expression
+>>> a = lambda x, y: x+y	
+>>>	print(a(3, 4))	
+7
+
+from random import randint,choice
+
+def exam():
+    cmds = {'+':lambda x,y:x+y, '-':lambda x,y:x-y}
+    nums = [randint(1,100) for i in range(2)]
+    nums.sort(reverse=True)
+    op = choice('+-')
+    result = cmds[op](*nums)
+    prompt = '%s %s %s = ' % (nums[0],op,nums[1])
+    tries = 0
+
+    while tries < 3:
+        try :
+            answer = int(input(prompt))
+        except :
+            continue
+
+        if answer == result :
+            print('very good!')
+            break
+        else:
+            print('wrong answer.')
+            tries += 1
+    else:
+        print('%s%s' % (prompt, result))
+
+
+if __name__ == '__main__':
+    while True:
+        exam()
+        try:
+            yn = input('Continue(y/n)?').strip()[0]
+        except IndexError:
+            continue
+        except (KeyboardInterrupt,EOFError):
+            print()
+            yn = 'n'
+        if yn in 'nN':
+            break
+
+
+
+filter()函数
+•  filter(func, seq):调用一个布尔函数func来迭代遍历
+每个序列中的元素;返回一个使func返回值为true的
+元素的序列
+•  如果布尔函数比较简单,直接使用lambda匿名函数
+就显得非常方便了
+>>> data = filter(lambda	x: x % 2, [num for num in range(10)])	
+>>>	print(data)	#过滤出10以内的奇数
+[1, 3, 5, 7, 9]	
+
+
+from random import randint
+
+def func1(x):
+    return x % 2
+
+if __name__ == '__main__':
+    alist = [randint(1, 100) for i in range(10)]
+    print(alist)
+    # filter要求第一个参数是函数，该函数必须返回True或False
+    # 执行时把alist的每一项作为 func1的参数，返回真留下，否则过滤掉
+    result = filter(func1, alist)  # 高阶函数
+    print(list(result))
+    result2 = filter(lambda x: x % 2, alist)
+    print(list(result2))
+
+
+map() 函数
+
+
+from random import randint
+
+def func1(x):
+    return x*2+1
+
+if __name__ == '__main__':
+    alist = [randint(1, 100) for i in range(10)]
+    print(alist)
+    # map将第二个参数中的每一项交给fucnc函数进行加工，保留加工后的结果
+    result = map(func1, alist)  # 高阶函数
+    print(list(result))
+    result2 = map(lambda x: x * 2 + 1, alist)
+    print(list(result2))
+
+
+
+函数高级应用
+
+变量作用域
+
+全局变量
+•  标识符的作用域是定义为其声明在程序里的可应用范围,也就是变量的可见性
+•  在一个模块中最高级别的变量有全局作用域
+•  全局变量的一个特征是除非被删除掉,否则它们的存活到脚本运行结束,且对于所有的函数,
+他们的值都是可以被访问的
+
+
+局部变量
+•  局部变量只时暂时地存在,仅仅只依赖于定义它们的函数现阶段是否处于活动
+•  当一个函数调用出现时,其局部变量就进入声明它们的作用域。在那一刻,一个新的局部变量名为那个对象创建了
+•  一旦函数完成,框架被释放,变量将会离开作用域
+•  如果局部与全局有相同名称的变量,那么函数运行时,局部变量的名称将会把全局变量名称遮盖住
+
+>>> x = 4	
+>>> def foo():	
+... x = 10	
+... print('in foo, x =', x)	
+...	
+>>> foo()	
+in foo, x = 10	
+>>> print('in main, x =', x)	
+in main, x = 4	
+
+
+global语句
+•  因为全局变量的名字能被局部变量给遮盖掉,所以为了明确地引用一个已命名的全局变量,必须使用global语句
+
+>>>x=4	
+>>>def foo():	
+... globalx	
+... x = 10	
+... print('in foo, x =', x)	
+...	
+>>> foo()	
+in foo, x = 10	
+>>> print('in main, x =', x)	
+in main, x = 10	
+
+
+>>> def bbb():
+...    print(len('haha'))
+... 
+>>> 
+>>> bbb()
+4
+>>> len =100
+>>> bbb()
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "<stdin>", line 2, in bbb
+TypeError: 'int' object is not callable
+>>> def ccc() :
+...   len = 50
+...   print(len)
+... 
+>>> ccc()
+50
+
+
+名字空间
+•  任何时候,总有一个到三个活动的作用域(内建、全局和局部)
+•  标识符的搜索顺序依次是局部、全局和内建
+•  提到名字空间,可以想像是否有这个标识符
+•  提到变量作用域,可以想像是否可以“看见”这个标识符
+变量的识别 顺序    局部变量==>全局变量==>内建函数
+
+函数式编程
+
+
+
+偏函数
+•  偏函数的概念是将函数式编程的概念和默认参数以及可变参数结合在一起
+•  一个带有多个参数的函数,如果其中某些参数基本上固定的,那么就可以通过偏函数为这些参数赋默认值
+
+>>> from operator	import add	
+>>> from functools import par(al	
+>>> add10 = par(al(add, 10)	
+>>> print(add10(25))	
+35	
+
+
+from functools import partial
+def foo(a, b, c, d, e):
+    return a + b + c + d +e
+if __name__ == '__main__':
+    print(foo(10,20,30,40,5))
+    print(foo(10,20,30,40,25))
+    print(foo(10,20,30,40,69))
+    print(foo(10,20,30,40,33))
+    add = partial(foo,a=10,b=20,c=30,d=40)
+    print(add(e=5))
+    print(add(e=25))
+
+案例2:简单GUI程序
+1.  窗口程序提供三个按钮
+2.  其中两个按钮的前景色均为白色,背景色为蓝色
+3.  第三个按钮前景色为红色,背景色为红色
+4.  按下第三个按钮后,程序退出
+
+import tkinter
+from functools import partial
+
+root = tkinter.Tk()
+lb = tkinter.Label(text='hello world!')
+b1 = tkinter.Button(root, fg='white', bg='blue', text='Button 1')
+MyBtn = partial(tkinter.Button,root, fg='white', bg='blue')
+b2 = MyBtn(text='Button 2')
+b3 = MyBtn(text='quit', command =root.quit)
+lb.pack()
+b1.pack()
+b2.pack()
+b3.pack()
+root.mainloop()
+
+#yum -y install tk-devel tcl-devel sqlite-devel
+
+
+递归函数
+•  如果函数包含了对其自身的调用,该函数就是递归的
+•  在操作系统中,查看某一目录内所有文件、修改权限等都是递归的应用
+>>> def func(num):	
+...    if num == 1:	
+...          return 1	
+...	 else:	
+...		return num * func(num - 1)	
+...	
+>>> print(func(5))	
+120	
+>>> print(func(10))	
+3628800	
+
+def func(n):  # 5
+    if n == 1:
+        return n
+    return n * func(n - 1)
+         # 5 * func(4)
+         # 5 * 4 * func(3)
+         # 5 * 4 * 3 * func(2)
+         # 5 * 4 * 3 * 2 * func(1)
+         # 5 * 4 * 3 * 2 * 1
+
+if __name__ == '__main__':
+    print(func(5))
+    print(func(6))
+
+
+
+案例3:快速排序
+1.  随机生成10个数字
+2.  利用递归,实现快速排序
+
+
+from random import randint
+
+def quick_sort(num_list):
+    if len(num_list) < 2 :
+        return num_list
+    middle = num_list[0]
+    smaller = []
+    larger = []
+    for i in num_list[1:] :
+        if i < middle :
+            smaller.append(i)
+        else:
+            larger.append(i)
+    return quick_sort(smaller) + [middle] + quick_sort(larger)
+
+
+if __name__ == '__main__':
+    alist = [randint(1,100) for i in range(10)]
+    print(quick_sort(alist))
+
+
+生成器
+•  从句法上讲,生成器是一个带yield语句的函数
+•  一个函数或者子程序只返回一次,但一个生成器能暂停执行并返回一个中间的结果
+•  yield 语句返回一个值给调用者并暂停执行
+•  当生成器的next()方法被调用的时候,它会准确地从离开地方继续
+
+
+
+
+def mygen() :
+	yield 'hello'
+	a = 10+5
+	yield a		每个yield运行到这就停一下
+	yield [1,2,3]
+
+if __name__ == '__main__':
+    m = mygen()
+    for i in m :
+        print(i)
+    for i in m :
+        print(i)  #无值，因为生成器对象只能用一次
+
+每次读取10行文件，然后遍历读出所有内容
+
+def blocks(fobj) :
+    block = []
+    count = 0
+    for line in fobj:
+        block.append(line)
+        count +=1
+        if count == 10 :
+            yield block		#返回中间结果，下次取值，从这里继续执行
+            block = []
+            count = 0
+    if block :
+        yield block
+
+if __name__ == '__main__':
+    fobj = open('/tmp/passwd')
+    for lines in blocks(fobj) :
+        print(lines)
+        print()
+    fobj.close()
+
+
+
+
+内部函数
+
+闭包
+•  闭包将内部函数自己的代码和作用域以及外部函数的作用结合起来
+•  闭包的词法变量不属于全局名字空间域或者局部的--而属于其他的名字空间,带着“流浪"的作用域
+•  闭包对于安装计算,隐藏状态,以及在函数对象和作用域中随意地切换是很有用的
+•  闭包也是函数,但是他们能携带一些额外的作用域
+
+1、函数中嵌套定义了另一个函数
+2、内嵌函数引用了外部函数的变量
+3、外部函数返回内嵌函数
+
+
+import tkinter
+from functools import partial
+
+def hello(words) :
+    def welcome() :
+        lb.config(text= 'hello %s!' % words)
+    return welcome          #hello函数的返回值还是函数
+
+root = tkinter.Tk()
+lb = tkinter.Label(text='hello world!',font = 'Times 26')
+MyBtn = partial(tkinter.Button,root, fg='white', bg='blue')
+b1 = MyBtn(text='Button 1',command=hello('china')) #command的返回值只能是函数，所以在hello里面再嵌套
+b2 = MyBtn(text='Button 2',command=hello('tedu'))
+b3 = MyBtn(text='quit', command =root.quit)
+lb.pack()
+b1.pack()
+b2.pack()
+b3.pack()
+root.mainloop()
+
+
+•  创建通用的计数器
+def counter(start=0):
+    count = start
+    def incr():
+        nonlocal count
+        count += 1
+        return count
+    return incr
+
+if __name__ == '__main__':
+    a = counter()
+    print(a())
+    b = counter(10)
+    print(b())
+    print(a())
+    print(b())
+
+装饰器
+•  装饰器是在函数调用之上的修饰
+•  这些修饰仅是当声明一个函数或者方法的时候,才会应用的额外调用
+•  使用装饰器的情形有:
+–  引入日志
+–  增加计时逻辑来检测性能
+–  给函数加入事务的能力
+
+
+
+def color(func) :
+    def red():
+        return '\033[31;1m%s\033[0m' % func()
+    return red
+
+
+def hello() :
+    return  'hello World'
+
+@color
+def welcome() :
+    return  'hello China'
+
+if __name__ == '__main__':
+    hello = color(hello) # 此种写法可以换成为welcome加上@color
+    print(hello())
+    print(color(welcome)())
+    print(welcome())       #welcome 因为有装饰器，所以调用时不是调用welcome函数
+                           #而是相当于color(welcome)()
+                           #color(welcome)返回red,color(welcome)()
+                           #等价于red()
+
+
+
+
+
+
+
+
+def color(func) :
+    def red(*args):
+        return '\033[31;1m%s\033[0m' % func(*args)
+    return red
+
+@color
+def hello(word) :
+    return  'hello %s' % word
+
+@color
+def welcome() :
+    return  'hello China'
+
+if __name__ == '__main__':
+    print(hello('World'))
+    print(welcome())
+
+
+案例4:测试程序运行效率
+1.  有个程序包含多个函数
+2.  程序运行耗时较长
+3.  为了确定哪个函数是瓶颈,需要计算出每个函数运行时间
+4.  要求使用装饰器实现
+
+案例：仿照ls -R的功能写一个递归的函数
+
+
+
+
+

@@ -1,0 +1,552 @@
+
+Python开发进阶
+
+模块和文件
+
+什么是模块
+•  模块支持从逻辑上组织python代码
+•  当代码量变得相当大的时候, 最好把代码分成一些有组织的代码段
+•  代码片段相互间有一定的联系,可能是一个包含数据成员和方法的类,也可能是一组相关但彼此独立的操作函数
+•  这些代码段是共享的,所以python允许“调入”一个模块,允许使用其他模块的属性来利用之前的工作成果,实现代码重用
+
+•  说模块是按照逻辑来组织python代码的方法,文件是物理层上组织模块的方法
+•  一个文件被看作是一个独立模块,一个模块也可以被看作是一个文件
+•  模块的文件名就是模块的名字加上扩展名.py
+
+
+名称空间
+•  名称空间就是一个从名称到对象的关系映射集合
+•  给定一个模块名之后,只可能有一个模块被导入到python解释器中,所以在不同模块间不会出现名称交叉现象
+•  每个模块都定义了它自己的唯一的名称空间
+>>>	import foo
+>>>	import bar	
+>>>	print(foo.hi) #调用foo模中的hi变量
+hello	
+>>>	print(bar.hi) #调用bar模块中的hi变量
+greet	
+
+
+导入模块
+
+搜索路径
+•  模块的导入需要一个叫做“路径搜索”的过程
+•  python在文件系统“预定义区域”中查找要调用的模块
+•  搜索路径在sys.path中定义
+>>> import sys	
+>>> print(sys.path)	
+['', '/usr/local/lib/python36.zip',	'/usr/local/lib/python3.6',	'/usr/
+local/lib/python3.6/lib-dynload',	'/usr/local/lib/python3.6/site-
+packages']
+
+
+模块导入方法
+•  使用import导入模块
+•  可以在一行导入多个模块,但是可读性会下降
+•  可以只导入模块的某些属性
+•  导入模块时,可以为模块取别名
+>>>	import time, os, sys	
+>>>	from random import choice	
+>>>	import pickle as p	
+
+•  当导入模块时,模块的顶层代码会被执行
+•  一个模块不管被导入(import)多少次,只会被加载(load)一次
+[root@py01 ~]# cat foo.py	
+hi = 'hello'	
+print(hi)	
+[root@py01	~]# python3	
+>>> import foo	
+Hello			#第一次导入,执行print语句
+>>> import foo	 #再次导入,print语句不再执行	
+
+从zip文件中导入
+•  在2.3版中,python加入了从ZIP归档文件导入模块的功能
+•  如果搜索路径中存在一个包含python模块(.py、.pyc、或.pyo文件)的.zip文件,
+导入时会把ZIP文件当作目录处理
+#导入sys模块,在搜索路径中加入相应的zip文件	
+>>> import sys		
+>>> sys.path.append('/root/pymodule.zip')	
+>>> import foo    #导入pymodule.zip压缩文件中的foo模块
+
+import sys  
+import string as s # 导入模块时，可以取别名
+
+sys.path #模块导入时搜索的路径，自己写的模块可以放到site-packages
+s.ascii_letters
+
+# foo.py -> hi = 'hello'
+	     #print(hi)
+#zip mytest.zip foo.py
+#rm -rf foo.py
+#python3
+
+#>>> import foo ->Error
+#>>> import sys
+#>>> sys.path.append('./mytest.zip')
+#>>> import foo
+
+
+
+包
+
+目录结构
+•  包是一个有层次的文件目录结构,为平坦的名称空间加入有层次的组织结构
+•  允许程序员把有联系的模块组合到一起
+•  包目录下必须有一个__init__.py文件
+phone/	
+	__init__.py	
+	common_uDl.py	
+	voicedata/	
+		__init__.py	
+		post.py	
+
+
+
+绝对导入
+•  包的使用越来越广泛,很多情况下导入子包会导致和真正的标准库模块发生冲突
+•  因此,所有的导入现在都被认为是绝对的,也就是说这些名字必须通过python路径(sys.path或PYTHONPATH)来访问
+
+相对导入
+•  绝对导入特性使得程序员失去了import的自由,为此出现了相对导入
+•  因为import语句总是绝对导入的,所以相对导入只
+应用于from-import语句
+[root@py01	~]# ls -R phone/	
+phone/:
+common_util.py __init__.py voicedata	
+phone/voicedata:
+__init__.py	 post.py	
+	
+[root@py01 ~]# cat phone/voicedata/post.py	
+from .. import common_util	
+
+
+内置模块
+
+hashlib模块
+•  hashlib用来替换md5和sha模块,并使他们的API一致,专门提供hash算法
+•  包括md5、sha1、sha224、sha256、sha384、sha512,使用非常简单、方便
+>>>	import hashlib	
+>>>	m = hashlib.md5()	
+>>>	m.update('hello world!')	
+>>>	m.hexdigest()	
+'fc3ff98e8c6a0d3087d515c0473f8677'	
+
+
+>>> m.update('hello world')
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+TypeError: Unicode-objects must be encoded before hashing
+>>> m.update('hello world'.encode('utf8'))
+>>> print(m.hexdigest())
+202cb962ac59075b964b07152d234b70
+
+
+
+
+
+#加密：对称加密、非对称加密、单向加密
+#单向加密：加密只能向一个方向进行，相同的数据总是得到相同的"乱码"
+#不能根据结果回推源。用途：文件完整性、加密密码
+
+import hashlib
+
+f = open('/etc/passwd', 'rb')
+data = f.read()
+f.close()
+
+m = hashlib.md5(data)
+print(m.hexdigest())
+
+# m = hashlib.md5()
+# m.update(data)  # 每次读取一部分文件内容，更新至m对象
+
+
+类似于md5sum的功能
+
+import sys
+import hashlib
+
+def check_md5(file) :
+     m = hashlib.md5()
+     with open(file,'rb') as fobj :
+         while True :
+            data = fobj.read(4096)
+            if not  data :
+                break
+            m.update(data)
+     return m.hexdigest()
+
+if __name__ == '__main__':
+    print(check_md5(sys.argv[1]))
+
+
+
+tarfile模块
+•  tarfile模块允许创建、访问tar文件
+•  同时支持gzip、bzip2格式
+[root@py01	home]# ls /home/demo/	
+install.log	 mima	
+[root@py01	home]# python	
+>>>	import tarfile	
+>>>	tar	= tarfile.open('/home/demo.tar.gz', 'w:gz')	
+>>>	tar.add('demo')	
+>>>	tar.close()	
+
+
+
+import tarfile
+
+tar = tarfile.open('/tmp/demo.tar.gz','w:gz')       #gzip压缩
+tar.add('/etc/passwd')
+tar.add('/etc/hosts')
+tar.close()
+#tar tvzf /tmp/demo.tar.gz
+# https://yiyibooks.cn
+
+
+tar = tarfile.open('/tmp/demo.tar.gz','r:gz')  # 解压所有文件到当前目录
+tar.extractall()			##里面有path 和member的选项功能
+tar.close()
+
+
+案例1:备份程序
+1.  需要支持完全和增量备份
+2.  周一执行完全备份
+3.  其他时间执行增量备份
+4.  备份文件需要打包为tar文件并使用gzip格式压缩
+
+
+OOP基础
+
+基本概念
+•  类(Class):用来描述具有相同的属性和方法的对象的集合。
+它定义了该集合中每个对象所共有的属性和方法。对象是类的实例。
+•  实例化:创建一个类的实例,类的具体对象。
+•  方法:类中定义的函数。
+•  对象:通过类定义的数据结构实例。对象包括两个数据成员(类变量和实例变量)和方法。
+
+创建类
+•  使用 class 语句来创建一个新类,class 之后为类的名称并以冒号结尾
+•  类名建议使用驼峰形式
+class	BearToy:	
+	pass	
+
+
+创建实例
+•  类是蓝图,实例是根据蓝图创建出来的具体对象
+   tidy = BearToy()	
+
+
+
+构造器方法
+•  当实例化类的对象时,构造器方法默认自动调用
+•  实例本身作为第一个参数,传递给self
+
+class	BearToy:	
+	def __init__(self, nm, size, color):
+		'''__init__在实例化时自动执行，实例本身自动作为第一个参数传递给self'''
+		self.size = size		#绑定属性到实例
+		self.color = color	
+		self.name = nm
+	def sing(self) ；
+		print('lalala....')
+	def speak(self) :
+		print('My name is %s' % self.name)
+if __name__ == '__main__':	
+	tidy = BearToy('Tiny','small', 'orange')	#调用__init__
+	print(tiny.size)
+	print(tiny.color)
+	tidy.sing()
+	tidy.speak()
+
+案例2:编写酒店类
+1.  用于计算住宿开销
+2.  酒店有会员卡可以打九折
+3.  每天早餐15元
+4.  根据住宿天数返加总费用
+
+class hotel :
+    def __init__(self,price=200,cutoff=1.0, br=15):
+        self.price = price
+        self.cutoff = cutoff
+        self.br = br
+    def calc(self,days=1):
+        return (self.price * self.cutoff + self.br) * days
+
+if __name__ == '__main__':
+    stdroom = hotel()
+    bigbed = hotel(220,cutoff=0.9)
+    print(stdroom.calc())
+    print(stdroom.calc(2))
+    print(bigbed.calc())
+    print(bigbed.calc(2))
+
+
+OOP进阶
+组合和派生
+
+什么是组合
+•  类被定义后,目标就是要把它当成一个模块来使用,并把这些对象嵌入到你的代码中去
+•  组合就是让不同的类混合并加入到其它类中来增加功能和代码重用性
+•  可以在一个大点的类中创建其它类的实例,实现一些其它属性和方法来增强对原来的类对象
+
+组合应用
+•  两个类明显不同
+•  一个类是另一个类的组件	
+
+class Vendor:
+    def __init__(self, phone, email):
+        self.phone = phone
+        self.email = email
+
+    def call(self):
+        print('calling %s' % self.phone)
+
+class BearToy:
+    def __init__(self,color,size,phone,email):
+        self.color = color
+        self.size = size
+        self.vendor = Vendor(phone, email)
+
+if __name__ == '__main__':
+    bigbear = BearToy('Brown', 'Middle','4008009999', 'sale@tedu.cn')
+    print(bigbear.color)
+    bigbear.vendor.call()
+
+
+创建子类
+•  当类之间有显著的不同,并且较小的类是较大的类所需要的组件时组合表现得很好;
+但当设计“相同的类但有一些不同的功能”时,派生就是一个更加合理的选择了
+•  OOP 的更强大方面之一是能够使用一个已经定义好的类,扩展它或者对其进行修改,
+而不会影响系统中使用现存类的其它代码片段
+•  OOD(面向对象设计)允许类特征在子孙类或子类中进行继承
+•  创建子类只需要在圆括号中写明从哪个父类继承即可
+
+继承
+•  继承描述了基类的属性如何“遗传”给派生类
+•  子类可以继承它的基类的任何属性,不管是数据属性还是方法
+
+
+class BearToy :
+    def __init__(self,nm, color, size):
+        self.name = nm
+        self.color = color
+        self.size = size
+    def sing(self):
+        print('lalala.....')
+    def speak(self):
+        print('my nams is %s' % self.name)
+
+class NewBear(BearToy):
+    def run(self):
+        print('running...')
+
+if __name__ == '__main__':
+    b1 = NewBear('venie','Brown','Large')
+    b1.sing()
+    b1.run()
+
+通过继承覆盖方法
+•  如果子类中有和父类同名的方法,父类方法将被覆盖
+•  如果需要访问父类的方法,则要调用一个未绑定的父类方法,明确给出子类的实例
+
+class BearToy :
+    def __init__(self,nm, color, size):
+        self.name = nm
+        self.color = color
+        self.size = size
+    def sing(self):
+        print('lalala.....')
+    def speak(self):
+        print('my nams is %s' % self.name)
+
+class NewBear(BearToy):
+    def __init__(self,nm,color,size,date):
+        #BearToy.__init__(self,nm, color, size)
+        super(NewBear,self).__init__(nm,color,size)
+        self.date = date
+
+    def run(self):
+        print('running...')
+
+if __name__ == '__main__':
+    b1 = NewBear('venie','Brown','Large','1992-01-01')
+    b1.sing()
+    b1.run()
+    print(b1.date)
+
+
+多重继承
+•  python允许多重继承,即一个类可以是多个父类的子类,子类可以拥有所有父类的属性
+
+class A:
+    def foo(self):
+        print('in A foo')
+
+class B:
+    def bar(self):
+        print('in B bar')
+class C(A,B):
+    pass
+
+if __name__ == '__main__':
+    c = C()
+    c.foo()
+    c.bar()
+
+如果多个父类里有重名的方法，则使用的顺序是：自下向上，自左向右
+
+class A:
+    def hello(self):
+        print('A hello')
+
+class B:
+    def hello(self):
+        print('B hello')
+
+class C(B,A):
+    pass
+    # def hello(self):
+    #     print('C hello')
+
+if __name__ == '__main__':
+    c.hello()
+
+输出的记过是B hello
+如果C 有hello方法，则打印C hello
+
+
+
+特殊方法
+
+类方法
+•  使用classmethod装饰器定义
+•  第一个参数cls表示类本身
+
+静态方法
+•  基本上就是一个函数
+•  在语法上就像一个方法
+•  没有访问对象和它的字段或方法
+•  使用staticmethod装饰器定义
+
+class Date :
+    def __init__(self,year, month, date):
+        self.year = year
+        self.month  = month
+        self.date  = date
+
+    @classmethod		#类方法，不用创建实例即可调用
+    def create(cls,dstr): #cls表示类本身，class
+        y, m, d = map(int,dstr.split('-'))
+        dt = cls(y, m, d)
+        return dt
+
+    @staticmethod				#一个和此类不相关的函数，强行加入此类，要加上静态
+    def is_date_valid(dstr):
+        y, m, d = map(int,dstr.split('-'))
+        return 1<= d <= 31 and 1<= m <=12 and y<4000
+
+if __name__ == '__main__':
+    bith_date = Date(1995, 12, 3)
+    print(Date.is_date_valid('2000-5-4'))
+    day = Date.create('2000-5-4')
+    print(day)
+
+
+__init__方法
+•  实例化类实例时默认会调用的方法
+class	BearToy:	
+	__init__(self, size, color):	
+		self.size = size	
+		slef.color = color	
+	
+if __name__ == '__main__':	
+	tidy = BearToy('small', 'orange')	
+
+
+__str__方法
+•  打印/显示实例时调用方法
+•  返回字符串
+
+__call__方法
+•  用于创建可调用的实例
+
+案例3:出版商程序
+1.  为出版商编写一个Book类
+2.  Book类有书名、作者、页数等属性
+3.  打印实例时,输出书名
+4.  调用实例时,显示该书由哪个作者编写
+class Book:
+	def __init__(self, title, author, pages):
+		self.title = title
+		self.author = author
+		self.pages = pages
+	def __str__(self):
+		return '《 %s 》' % (self.title)
+	def __call__(self):
+		print('《%s》 is written by %s ' % (self.title,self.author))
+
+if __name__ == '__main__':
+	py_book = Book('Core Python', 'Wysley', 800)
+	print(py_book)	 #  调用__str__方法 不再显示对象的内存地址，显示 str方法的内容
+	py_book()	# 调用__call__方法
+
+
+1、编写程序,可能将文本文件转成linux文本格式和windows文本格式
+2、以OOP的方式编写
+
+import os
+
+class Convert:
+    def __init__(self,filename):
+        self.filename = filename
+
+    def to_linux(self):
+        dst_fname = os.path.splitext(self.filename)[0] + '.linux'
+        with open(self.filename) as fobj :
+            with open(dst_fname,'w') as dst_fobj :
+                for line in fobj :
+                    line = line.rstrip() + '\n'
+                    dst_fobj.write(line)
+
+    def to_windows(self):
+        dst_fname = os.path.splitext(self.filename)[0] + '.windows'
+        with open(self.filename) as fobj :
+            with open(dst_fname,'w') as dst_fobj :
+                for line in fobj :
+                    line = line.rstrip() + '\r\n'
+                    dst_fobj.write(line)
+
+if __name__ == '__main__':
+    A = Convert('/tmp/passwd')
+    A.to_linux()
+    B = Convert('/tmp/hosts')
+    B.to_windows()
+
+××××将属性设置为基本类的属性，将动作或行为设置为方法，尽量不要设置继承子类
+××××运用os.path.splitext(文件)，可以将文件名和它的后缀分离,输出为一个元组
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,414 @@
+python
+
+
+· 特点
+- 高级：高级的数据结构，缩短开发时间与代码量
+- 面向对象：
+- 可升级
+- 可扩展
+- 可移植性
+- 易学
+- 易读
+- 内存管理器
+
+
+安装配置
+
+www.python.org
+
+安装依赖包
+
+[root@room9pc01 ~]# yum -y install gcc gcc-c++ zlib-devel openssl-devel readline-devel libffi-devel sqlite-devel tcl-devel tk-devel
+
+安装python3
+•  官方站点
+–  http://www.python.org
+•  选择正确的系统
+•  选择正确的版本
+
+编译安装
+tar	xzf	Python-3.6.4.tar.gz
+cd	Python-3.6.4
+./configure	--prefix=/usr/local	
+make	&&	make	install	
+[root@room9pc01 ~]# python3 --version
+Python 3.6.1
+
+
+设置pycharm
+•  Pycharm是由JetBrains打造的一款Python IDE
+•  支持的功能有:
+–  调试、语法高亮
+–  Project管理、代码跳转
+–  智能提示、自动完成
+–  单元测试、版本控制
+•  下载地址:https://www.jetbrains.com/pycharm/download
+•  分为收费的专业版和免费的社区版
+
+激活
+在终端运行./crack
+pycharm开始界面：
+选liscence server，输入http://127.0.0.1:1017 点activate
+
+Git简介
+•  Git是一个开源的分布式版本控制系统,用于敏捷高效地处理任何或小或大的项目。
+•  Git 是 Linus Torvalds 为了帮助管理 Linux 内核开发而开发的一个开放源码的版本控制软件。
+•  Git 与常用的版本控制工具 CVS, Subversion 等不同,它采用了分布式版本库的方式,不必服务器端软件支持。
+
+Git：分布式版本控制工具
+1、安装
+[root@room9pc01 ~]# yum -y install git
+
+2、提交代码需要配置个人信息
+[root@room9pc01 ~]# git config --global user.name "gaopf"
+[root@room9pc01 ~]# git config --global user.email "936849313@qq.com"
+
+3、设置编写代码说明的编辑器是vim
+[root@room9pc01 ~]# git config --global core.editor vim
+
+4、查看
+[root@room9pc01 ~]# git config --list
+[root@room9pc01 ~]# cat ~/.gitconfig
+
+
+Git工作流程
+工作区、暂存区和版本库
+•  工作区:就是你在电脑里能看到的目录
+•  暂存区:英文叫stage, 或index。一般存放在 ".git目录下" 下的index文件(.git/index)中,
+所以我们把暂存区有时也叫作索引(index)
+•  版本库:工作区有一个隐藏目录.git,这个不算工作区,而是Git的版本库
+
+5、创建工作区
+•  Git 使用 git init 命令来初始化一个 Git 仓库,Git 的
+很多命令都需要在 Git 的仓库中运行,所以 git init
+是使用 Git 的第一个命令。
+[root@room9pc01 ~]#mkdir	devops	
+
+6、初始化版本库
+[root@room9pc01 ~]#cd devops/	
+[root@room9pc01 devops]#	git init .或	
+[root@room9pc01 ~]#git init devops	
+[root@room9pc01 devops]# ls -a
+
+7、编写程序文件
+[root@room9pc01 devops]# echo 'hello world' > hi.txt
+[root@room9pc01 devops]# git status		//查看状态
+
+8、添加跟踪文件（所有文件）到版本库
+[root@room9pc01 devops]# git add .	
+[root@room9pc01 devops]# git status
+
+9、提交文件到版本库
+[root@room9pc01 devops]# git commit -m "add hi.txt"
+//git commit -am "向hello.py添加新行"	将add和commit一起执行
+[root@room9pc01 devops]# git status
+# 位于分支 master
+无文件要提交，干净的工作区
+
+10、修改hi.txt
+[root@room9pc01 devops]# echo haha >> hi.txt
+[root@room9pc01 devops]# git add .
+[root@room9pc01 devops]# git commit -m "modify hi.txt"
+
+11、恢复hi.txt到以前的版本
+[root@room9pc01 devops]# git log
+commit 0b93cd4b9d191fcfa50b8203be606c0d2aa56099
+Author: gaopf <936849313@qq.com>
+Date:   Mon Jul 16 11:30:40 2018 +0800
+
+    add hi.txt
+[root@room9pc01 devops]# git checkout 0b93cd4b9d191fcfa50b8203be606c0d2aa56099
+[root@room9pc01 devops]# cat hi.txt 
+hello world
+
+12、如果有误加入到版本库的文件，查看他，然后删除
+[root@room9pc01 devops]# git ls-files
+[root@room9pc01 devops]# git rm hi.txt
+[root@room9pc01 devops]# git commit -m "delete hi.txt"
+
+
+搭建本地gitlab服务器
+1、创建一台虚拟机，内存加到4G
+node1.tedu.cn	192.168.1.1
+2、把docker程序和镜像拷贝到虚拟机中
+3、安装docker
+cd /root/zzg_python_5/docker/docker_pkgs
+yum -y install * .rpm
+4、启动服务
+[root@node1 docker_pkgs]# systemctl restart docker
+[root@node1 docker_pkgs]# systemctl enable docker
+5、导入镜像
+[root@node1 docker]# docker load < images/gitlab_zh.tar
+6、为了方便gitlab容器的运行，将node1的ssh服务切换成2222端口
+[root@node1 docker]# vim /etc/ssh/sshd_config 
+Port 2222
+[root@node1 docker]# systemctl restart sshd
+7、重新登录到node1
+[root@room9pc01 ~]# ssh 192.168.1.1 -p 2222
+8、启动新容器。将容器的443、80、22端口发布出去。当容器意外停止的时候，将其重启。再将容器的配置目录、日志目录、数据目录映射到本机/srv/gitlab目录。如果映射目录没有写，就是和本机一样。-v /srv/gitlab/data
+
+[root@node1 ~]# docker run -d -h gitlab --name gitlab -p 443:443 -p 80:80 -p 22:22 --restart always -v /srv/gitlab/config:/etc/gitlab -v /srv/gitlab/logs:/var/log/gitlab -v /srv/gitlab/data gitlab_zh:latest
+
+稍等一会再访问http://192.168.1.2
+
+
+9、配置gitlab
+（1）访问http://192.168.1.1，第一次访问需要设置密码，密码必须8位以上，如1234.com
+（2）登录账户，root，1234.com
+（3）创建群组，群组路径和名字填写devops，类型为公开
+（4）创建群组后，右下角创建项目
+（5）拉取项目测试
+[root@room9pc01 tmp]# git clone http://192.168.1.1/devops/core_py.git
+
+
+以下三种情况的使用说明：第一是现在gitlab上创建项目，然后clone到本地，最后在本地进入目录开始编写代码；
+第二种情况是本地已有一个目录
+第三种情况是
+命令行指令
+￼
+Git 全局设置
+git config --global user.name "Administrator"
+git config --global user.email "admin@example.com"
+
+￼
+创建新版本库
+git clone http://gitlab/devops/core_py.git
+cd core_py
+touch README.md
+git add README.md
+git commit -m "add README"
+git push -u origin master
+
+￼
+已存在的文件夹
+cd existing_folder
+git init
+git remote add origin http://gitlab/devops/core_py.git
+git add .
+git commit -m "Initial commit"
+git push -u origin master
+
+￼
+已存在的 Git 版本库
+cd existing_repo
+git remote rename origin old-origin
+git remote add origin http://gitlab/devops/core_py.git
+git push -u origin --all
+git push -u origin --tags
+
+
+10、创建用户、授权可以向项目中提交代码
+左上角扳手，new user。新建用户时不能设置密码，创建成功后，点击编辑设置密码
+
+11、root用户将新建的用户加入到群组中，并且设置新用户为“主程序员”，用户就可以上传代码
+
+12、在本地配置新用户，实现上传代码
+（1）在gitlab的web页面上注销root用户，用新用户登录
+（2）用户在本地生成ssh秘钥
+[root@client ~]# ssh-keygen -t rsa -C "your.email@example.com" -b 4096
+（3）查看秘钥内容
+[root@client ~]# cat .ssh/id_rsa.pub 
+（4）在gitlab页面上点击左侧边栏的ssh秘钥，把第（3）步查看到的秘钥粘贴进来
+
+13、本地上传代码测试
+（1）创建本地版本库
+[root@room9pc01 ~]# mkdir myproject
+[root@room9pc01 ~]# cd myproject
+[root@room9pc01 myproject]# cp /etc/hosts .
+[root@room9pc01 myproject]# git init 
+[root@room9pc01 myproject]# git add .
+[root@room9pc01 myproject]# git commit -m "init myproject"
+（2）上传代码
+[root@room9pc01 myproject]# git remote rename origin old-origin
+如果出现一下错误，可以忽略
+error: 不能重命名配置小节 'remote.origin' 到 'remote.old-origin'
+[root@room9pc01 myproject]# git config --global user.name "gaopf"
+[root@room9pc01 myproject]# git config --global user.email "936849313@qq.com"
+//git的全局变量会存放在：~/.gitconfig 
+[root@room9pc01 myproject]# git remote add origin git@192.168.1.1:/devops/core_py.git
+[root@room9pc01 myproject]# git push -u origin --all
+//这里如果报错权限不对，是因为虽然公钥已经拷贝过去了，但是自己的私钥没有添加，在本机执行ssh-add和ssh-agent
+就可以了
+
+（3）如果有代码的修改，只要git add /git commit /git push 即可
+[root@room9pc01 myproject]# cp /etc/passwd .
+[root@room9pc01 myproject]# git add .
+[root@room9pc01 myproject]# git commit -m "add new file passwd"
+[root@room9pc01 myproject]# git push
+
+
+排错
+问题1
+[root@room9pc01 python]# git push -u origin --all
+Warning: the ECDSA host key for 'gitlab' differs from the key for the IP address '192.168.1.1'
+Offending key for IP in /root/.ssh/known_hosts:19
+Matching host key in /root/.ssh/known_hosts:48
+Are you sure you want to continue connecting (yes/no)? yes
+sign_and_send_pubkey: signing failed: agent refused operation
+Permission denied (publickey).
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+针对上面错误的解决方案
+[root@room9pc01 python]# ssh-add 
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@         WARNING: UNPROTECTED PRIVATE KEY FILE!          @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+Permissions 0644 for '/root/.ssh/id_rsa' are too open.( 表示私钥的权限太大)
+It is required that your private key files are NOT accessible by others.
+This private key will be ignored.
+
+针对私钥的权限太大问题
+[root@room9pc01 python]# chmod 0600 /root/.ssh/id_rsa
+
+[root@room9pc01 python]# ssh-add的正确结果
+Identity added: /root/.ssh/id_rsa (/root/.ssh/id_rsa)
+
+
+问题2
+[root@room9pc01 python]# git push -u origin --all
+Warning: the ECDSA host key for 'gitlab' differs from the key for the IP address '192.168.1.1'
+Offending key for IP in /root/.ssh/known_hosts:19
+Matching host key in /root/.ssh/known_hosts:48
+Are you sure you want to continue connecting (yes/no)? yes
+To git@gitlab:root/core_pyxx.git
+ ! [rejected]        master -> master (non-fast-forward)
+error: 无法推送一些引用到 'git@gitlab:root/core_pyxx.git'
+提示：更新被拒绝，因为您当前分支的最新提交落后于其对应的远程分支。
+提示：再次推送前，先与远程变更合并（如 'git pull'）。详见
+提示：'git push --help' 中的 'Note about fast-forwards' 小节。
+
+出现上述报错的原因是当前分支的最新提交落后于其他对应的远程分支，所有我们先从远程库fetch到更新，再和本地库合并，之后就可以git　push操作了．
+[root@room9pc01 python]#git fetch origin
+[root@room9pc01 python]# git merge origin/master
+[root@room9pc01 python]# git push -u origin --all
+
+
+
+
+
+
+
+
+Python起步
+
+Python运行方式
+交互解释器
+•  进入交互解释器
+[root@zzghost1 bin]# python3	
+Python 3.6.3 (default, Oct 13 2017, 11:38:12)	
+[GCC 4.8.5 20150623 (Red	Hat	4.8.5-4)] on linux	
+Type "help", "copyright", "credits" or "license" for more informaeon.	
+>>>	
+•  退出交互解释器
+>>>exit()	
+或	
+>>>ctrl+d	
+
+文件形式
+•  明确指定解释器
+[root@zzghost1 day01]#python3 hello.py	
+•  赋予python文件可执行权限
+[root@zzghost1 day01]#chmod +x hello.py	
+[root@zzghost1 day01]# ./hello.py	
+
+Python语法结构
+
+语句块缩进
+•  python代码块通过缩进对齐表达代码逻辑而不是使用大括号
+•  缩进表达一个语句属于哪个代码块
+•  缩进风格
+–  1或2:可能不够,很难确定代码语句属于哪个块
+–  8至10:可能太多,如果代码内嵌的层次太多,就会使得代码很难阅读
+–  4个空格:非常流行, 范·罗萨姆支持的风格
+•  缩进相同的一组语句构成一个代码块,称之代码组
+•  首行以关键字开始,以冒号 : 结束,该行之后的一行或多行代码构成代码组
+•  如果代码组只有一行,可以将其直接写在冒号后面,但是这样的写法可读性差,不推荐
+
+注释及续行
+•  首要说明的是:尽管Python是可读性最好的语言之
+一,这并不意味着程序员在代码中就可以不写注释
+•  和很多UNIX脚本类似,python注释语句从#字符开始
+•  注释可以在一行的任何地方开始,解释器会忽略掉该行#之后的所有内容
+•  一行过长的语句可以使用反斜杠\分解成几行
+
+在项目右键 copy path 就可以到命令行终端cd到目录，执行python3 xxx.py 执行
+在pycharm里面也可以直接执行 crtl+shift+f10
+
+选中想要注释的行 ctrl+？，取消注释一样
+
+同行多个语句
+•  分号 ; 允许你将多个语句写在同一行上
+•  但是这些语句不能在这行开始一个新的代码块
+•  因为可读会变差,所以不推荐使用
+
+
+print('hello world!')
+print('hello','world!')         #逗号自动添加空格
+print('hello'+'world!')         #加号表示字符拼接
+print('hello','world',sep='****')   #单词间用****分隔
+print('#' * 50)     # *号表示重复50遍
+print('how are u?',end='')  #默认print会打印回车,end=''表示不要回车
+
+number = input("请输入数字： ")   #input用户获取键盘输入
+print(number)   #input 获得的数据全是字符
+print(number + 20)  #报错，不能把字符和数字做运算
+
+user = input('请输入用户名')
+print('热烈欢迎' + user)
+print('热烈欢迎',user)
+
+
+Python变量
+
+变量定义
+•  变量名称约定
+–  第一个字符只能是大小写字母或下划线
+–  后续字符只能是大小写字母或数字或下划线
+–  区分大小写
+•  python是动态类型语言,即不需要预先声明变量的类型
+
+•  推荐采用的全名方法
+–  变量名全部采用小写字母
+–  简短、有意义
+–  多个单词间用下划线分隔
+–  变量名用名词,函数名用谓词(动词+名词)
+–  类名采用驼峰形式
+
+
+变量赋值
+•  变量的类型和值在赋值那一刻被初始化,自右向左运算
+•  变量赋值通过等号来执行
+>>>	counter = 0	
+>>>	name = 'bob'	
+•  python也支持增量赋值
+>>> n	+= 1		#等价于n = n + 1	
+>>> n	*= 1		#等价于n = n	* 1	
+>>> i++	
+File	"<stdin>",	line	1	
+  i++							^	
+SyntaxError: invalid syntax	
+
+运算符
+•  标准算术运算符
++ - * / //(丢弃余数，只保留商) % **（幂运算）
+•  比较运算符
+< <= > >= == != <>
+•  逻辑运算符
+and not or
+
+print(5 / 2)  # 2.5
+print(5 // 2)  # 丢弃余数，只保留商
+print(5 % 2)  # 求余数
+print(5 ** 3)  # 5的3次方
+print(5 > 3)  # 返回True
+print(3 > 5)  # 返回False
+print(20 > 10 > 5)  # python支持连续比较
+print(20 > 10 and 10 > 5)  # 与上面相同含义
+print(not 20 > 10)  # False
+
+
+
+
+

@@ -1,0 +1,587 @@
+
+
+shell相关模块
+
+shutil模块
+
+复制和移动
+•  shutil.copyfileobj(fsrc, fdst[, length])
+将类似文件的对象fsrc的内容复制到类似文件的对象fdst。
+•  shutil.copyfile(src, dst, *, follow_symlinks=True)
+将名为src的文件的内容(无元数据)复制到名为dst的文件,然后返回dst。
+
+•  shutil.copy(src, dst, *, follow_symlinks=True)
+将文件src复制到文件或目录dst。src和dst应为字符串。
+如果dst指定目录,则文件将使用src的基本文件名复制到dst中。返回新创建的文件的路径。
+•  shutil.copy2(src, dst, *, follow_symlinks=True)
+与copy()相同,但copy2()也尝试保留所有文件元数据。
+•  shutil.move(src, dst, copy_function=copy2)
+递归地将文件或目录(src)移动到另一个位置(dst),并返回目标。
+
+目录操作
+•  shutil.copytree(src, dst, symlinks=False, ignore=None, copy_function=copy2, ignore_dangling_symlinks=False)
+递归地复制以src为根的整个目录树,返回目标目录。由dst命名的目标目录不能已经存在。
+•  shutil.rmtree (path, ignore_errors=False, onerror=None)
+删除整个目录树; 路径必须指向目录(而不是指向目录的符号链接)。
+
+
+import shutil
+
+with open('/etc/passwd','rb') as sfobj:
+    with open('/tmp/mima.txt','wb') as dfobj:
+        shutil.copyfileobj(sfobj,dfobj)         #拷贝文件对象
+
+shutil.copyfile('/etc/passwd', '/tmp/mima2.txt')    # cp 1.txt 2.txt
+shutil.copy('/etc/shadow', '/tmp/')                 # cp 1.txt /root/
+shutil.copy2('/etc/shadow', '/tmp/')                # cp -p 1.txt /root/
+shutil.move('/tmp/mima.txt', '/var/tmp')            # mv a.txt /root/
+shutil.copytree('/var/log', '/tmp/logs')            # cp -r /var/log /tmp/logs
+shutil.rmtree('tmp/logs')                           # rm -rf /tmp/logs
+
+
+权限管理
+•  shutil.copymode(src, dst, *, follow_symlinks=True)
+将权限位从src复制到dst。文件内容,所有者和组不受影响。src和dst是以字符串形式给出的路径名称。
+•  shutil.copystat(src, dst, *, follow_symlinks=True)
+将权限位,最后访问时间,上次修改时间和标志从src复制到dst。
+•  shutil.chown(path, user=None, group=None)
+更改给定路径的所有者用户和/或组
+
+###将mima2.txt的权限设置成与/etc/shadow一样 
+shutil.copymode('/etc/shadow','/tmp/mima2.txt')
+
+###将mima2.txt的元数据设置成与/etc/shadow一样，元数据使用stat /etc/shadow 查看
+shutil.copystat('/etc/shadow','/tmp/mima2.txt')
+
+shutil.chown('/tmp/passwd',user='zhangsan',group='zhangsan')
+
+
+pycharm的code选项  Reformat Code 会自动调整空格和空白行
+
+
+>>> a = b = 10
+>>> id(a)
+9336192
+>>> id(b)
+9336192
+>>> a = 20
+>>> b
+10
+>>> id(a)
+9336512
+>>> id(b)
+9336192
+>>> alist = blist = [1,2,3]
+>>> alist[0] = 10
+>>> alist
+[10, 2, 3]
+>>> blist
+[10, 2, 3]
+>>> id(alist)
+140402769182024
+>>> id(blist)
+140402769182024
+
+因为数值是不可变类型，列表是可变类型，a重新赋值 是在内存中开辟了另一块空间
+alist 重新赋值是在原来的内存空间进行修改
+
+
+语法风格
+
+变量赋值
+•  python支持链式多重赋值
+x = y = 10
+•  另一种将多个变量同时赋值的方法称为多元赋值,采用这种方式赋值时,等号两边的对象都是元组
+a, b = 10, 20
+
+
+合法标识符
+•  python标识符字符串规则和其他大部分用C编写的高级语言相似
+•  第一个字符必须是字母或下划线(_)
+•  剩下的字符可以是字母和数字或下划线
+•  大小写敏感
+
+关键字
+•  和其他的高级语言一样,python也拥有一些被称作关键这字的保留字符
+•  任何语言的关键字应该保持相对的稳定,但是因为python是一门不断成长和进化的语言,其关键字偶尔会更新
+•  关键字列表和iskeyword()函数都放入了keyword模块以便查阅
+
+内建
+•  除了关键字之外,python还有可以在任何一级代码使用的“内建”的名字集合,这些名字可以由解释器设置或使用
+•  虽然built-in不是关键字,但是应该把它当作“系统保留字”
+•  保留的常量如:True、False、None
+
+模块结构及布局
+•  编写程序时,应该建立一种统一且容易阅读的结构,并将它应用到每一个文件中去
+#!/usr/bin/env python			#起始行
+“this is a test module”     #模块文档字符串
+import sys			#导入模块
+import os 
+debug = True	#全局变量声明
+class	FooClass(object):		#类定义
+    'Foo class'	
+   pass	
+def test():    #函数定义
+"test	funcDon"	
+ foo	= FooClass()	
+if __name__	== ‘__main__’:	 #程序主体
+  test()	
+
+案例1:创建文件
+1.  编写一个程序,要求用户输入文件名
+2.  如果文件已存在,要求用户重新输入
+3.  提示用户输入数据,每行数据先写到列表中
+4.  将列表数据写入到用户输入的文件名中
+
+先建立逻辑，把程序的逻辑列出来
+
+import os
+
+def get_fname() :
+    while True :
+        fname = input('filename: ')
+        if not os.path.exists(fname) :
+            break
+        print('%s already exists. Try again' % fname)
+    return fname
+def get_content() :
+    content = []
+    print('输入数据，输入end结束')
+    while True :
+        line = input('> ')
+        if line == 'end' :
+            break
+        content.append(line)
+    return  content
+
+def wfile(fname,content) :
+    with open(fname,'w') as fobj :
+        fobj.writelines(content)
+
+if __name__ == '__main__':
+    fname = get_fname()
+    content = get_content()
+    content = ['%s\n' % line for line in content]
+    wfile(fname,content)
+
+
+
+
+字符串详解
+
+
+序列类型操作符
+
+序列操作符		作用
+seq[ind] 		获得下标为ind的元素
+seq[ind1:ind2] 	获得下标从ind1到ind2间的元素集合
+seq * expr 		序列重复expr次
+seq1 + seq2 	连接序列seq1和seq2
+obj in seq 		判断obj元素是否包含在seq中
+obj not in seq 	判断obj元素是否不包含在seq中
+
+内建函数
+函 数			含 义
+list(iter) 		把可迭代对象转换为列表
+str(obj) 		把obj对象转换成字符串
+tuple(iter) 	把一个可迭代对象转换成一个元组对象
+
+
+•  len(seq):返回seq的长度
+•  max(iter,key=None):返回iter中的最大值
+•  enumerate:接受一个可迭代对象作为参数,返回一个enumerate对象
+
+from random import randint
+
+alist = list()  # []
+list('hello')  # ['h', 'e', 'l', 'l', 'o']
+list((10, 20, 30))  # [10, 20, 30]  元组转列表
+astr = str()  # ''
+str(10)  # '10'
+str(['h', 'e', 'l', 'l', 'o'])  # 将列表转成字符串
+atuple = tuple()  # ()
+tuple('hello')  # ('h', 'e', 'l', 'l', 'o')
+num_list = [randint(1, 100) for i in range(10)]
+max(num_list)
+min(num_list)
+
+
+alist = [10,'john']
+>>> list(enumerate(alist))
+[(0, 10), (1, 'john')]
+>>> for ind in range(len(alist)) :
+...   print('%s:%s' % (ind,alist[ind]))
+... 
+0:10
+1:john
+>>> for item in enumerate(alist) :
+...   print('%s:%s'%(item[0],item[1]))
+... 
+0:10
+1:john
+>>> for ind,val in enumerate(alist) :
+...   print('%s:%s'%(ind,val))
+... 
+0:10
+1:john
+
+•  reversed(seq):接受一个序列作为参数,返回一个以逆序访问的迭代器
+•  sorted(iter):接受一个可迭代对象作为参数,返回一个有序的列表
+
+>>> atuple = [randint(1,100) for i in range(10)]
+>>> atuple
+[29, 23, 31, 93, 29, 23, 61, 73, 5, 16]
+>>> sorted(atuple)
+[5, 16, 23, 23, 29, 29, 31, 61, 73, 93]
+>>> reversed(atuple)
+<list_reverseiterator object at 0x7fb2112f20f0>
+>>> list(reversed(atuple))
+[16, 5, 73, 61, 23, 29, 93, 31, 23, 29]
+>>> for i in reversed(atuple) :
+...   print(i,end=' ')
+... 
+16 5 73 61 23 29 93 31 23 29
+
+
+字符串
+
+字符串操作符
+•  比较操作符:字符串大小按ASCII码值大小进行比较
+•  切片操作符:[ ]、[ : ]、[ : : ]
+•  成员关系操作符:in、not in
+>>>	py_str = 'Hello World!'	
+>>>	py_str[::2]
+'HloWrd'	
+>>>	py_str[::-1]	
+'!dlroW olleH'
+
+
+
+案例2:检查标识符
+1.  程序接受用户输入
+2.  判断用户输入的标识符是否合法
+3.  用户输入的标识符不能使用关键字
+4.  有不合法字符,需要指明第几个字符不合法
+
+
+import keyword
+keyword.kwlist  # 关键字列表
+keyword.iskeyword('pass')  # 判断pass是不是关键字
+
+
+
+
+import string
+import keyword
+import sys
+
+first_char = string.ascii_letters + '_'
+all_char = string.digits + first_char
+
+def check_id(char) :
+    if char[0] not in first_char :
+        return "1st is invalid!"
+    if keyword.iskeyword(char) :
+        return '%s is keyword' % char
+    for i in enumerate(char) :
+        if i[1] not in all_char :
+            return '第%s个字符不合法！！！' % (i[0]+1)
+    return '%s is valid' % char
+
+if __name__ == '__main__':
+    print(check_id(sys.argv[1]))
+
+
+格式化操作符
+•  字符串可以使用格式化符号来表示特定含义
+格式化字符		转换方式
+%c 			转换成字符
+%s 			优先用str()函数进行字符串转换
+%d / %i 		转成有符号十进制数
+%o 			转成无符号八进制数    %#o
+%e / %E 		转成科学计数法
+%f / %F 		转成浮点数
+
+
+"%s is %s years old" % ('bob', 23)  # 常用
+"%s is %d years old" % ('bob', 23)  # 常用
+"%s is %d years old" % ('bob', 23.5)  # %d是整数 常用
+"%s is %f years old" % ('bob', 23.5)
+"%s is %5.2f years old" % ('bob', 23.5)  # %5.2f是宽度为5，2位小数
+"97 is %c" % 97	#转换成ascii
+"11 is %#o" % 11  # %#o表示有前缀的8进制
+"11 is %#x" % 11
+"%10s%5s" % ('name', 'age')  # %10s表示总宽度为10，右对齐, 常用
+"%10s%5s" % ('bob', 25)
+"%10s%5s" % ('alice', 23)
+"%-10s%-5s" % ('name', 'age')  # %-10s表示左对齐, 常用
+"%-10s%-5s" % ('bob', 25)
+"%10d" % 123
+"%010d" % 123
+
+"{} is {} years old".format('bob', 25)
+"{1} is {0} years old".format(25, 'bob')
+"{:<10}{:<8}".format('name', 'age')
+
+
+
+
+
+•  字符串可以使用格式化符号来表示特定含义
+辅助指令		作用
+* 			定义宽度或者小数点精度
+- 			左对齐
++ 			在正数前面显示加号
+<sp>	 		在正数前面显示空格
+#			在八进制数前面显示零0,在十六进制前面显示'0x'或者'0X'
+0 			显示的数字前面填充0而不是默认的空格
+
+
+format函数
+•  使用位置参数
+–  'my name is {} ,age {}'.format('hoho',18)
+•  使用关键字参数
+–  'my name is {name},age is
+{age}'.format({'name':'bob', 'age':23})
+•  填充与格式化
+–  {:[填充字符][对齐方式 <^>][宽度]}
+•  使用索引
+–  'name is {0[0]} age is {0[1]}'.format(['bob', 23])
+前面的0 代表format括号里的第一个项目
+
+
+
+案例3:创建用户
+1.  编写一个程序,实现创建用户的功能
+2.  提示用户输入用户名
+3.  随机生成8位密码
+4.  创建用户并设置密码
+5.  将用户相关信息写入指定文件
+
+import subprocess
+import sys
+from randpass import cpasswd
+def adduser(username, passwd, fname) :
+    data = '''user information:
+%s : %s
+'''
+    subprocess.call('useradd %s' % username,shell=True)
+    subprocess.call(
+        'echo %s | passwd --stdin %s' % (passwd, username),
+        shell=True
+    )
+    with open(fname,'a') as fobj:
+        fobj.write(data % (username, passwd))
+
+if __name__ == '__main__':
+    adduser(sys.argv[1],cpasswd(8),'/tmp/user.txt')
+
+
+
+原始字符串操作符
+•  原始字符串操作符是为了对付那些在字符串中出现的特殊字符
+•  在原始字符串里,所有的字符都是直接按照字面的意思来使用,没有转义特殊或不能打印的字符
+>>>	winPath = "c:\windows\temp"	
+>>>	print(winPath)	
+c:\windows emp	
+>>>	newPath = r"c:\windows\temp"	
+>>>	print(newPath)	
+c:\windows\temp	
+
+案例4:格式化输出
+1.  提示用户输入(多行)数据
+2.  假定屏幕的宽度为50,用户输入的多行数据如下显
+示(文本内容居中):
++************************************************
++			helloworld			+	
++			greatwork!			+	
++************************************************+	
+
+
+py_str = 'hello world!'
+py_str.capitalize()
+Hello world!		这里字符串本身不会变，因为字符串本身不变
+
+py_str.title()
+Hello World!
+
+py_str.center(50)
+py_str.center(50, '#')
+py_str.ljust(50, '*')
+py_str.rjust(50, '*')
+**************************************hello world!
+py_str.count('l')  # 统计l出现的次数
+py_str.count('lo')
+py_str.endswith('!')  # 以!结尾吗？
+py_str.endswith('d!')
+py_str.startswith('a')  # 以a开头吗？
+py_str.islower()  # 字母都是小写的？其他字符不考虑
+py_str.isupper()  # 字母都是大写的？其他字符不考虑
+'Hao123'.isdigit()  # 所有字符都是数字吗？
+'Hao123'.isalnum()  # 所有字符都是字母数字？
+'  hello\t    '.strip()  # 去除两端空白字符，常用
+'  hello\t    '.lstrip()
+'  hello\t    '.rstrip()
+'how are you?'.split()
+'hello.tar.gz'.split('.')
+'.'.join(['hello', 'tar', 'gz'])
+'-'.join(['hello', 'tar', 'gz'])
+
+
+
+列表和元组
+
+
+创建及访问列表
+•  列表是有序、可变的数据类型
+•  列表中可以包含不同类型的对象
+•  列表可以由[]或工厂函数创建
+•  支持下标及切片操作
+
+a = b = 10
+a = 20  # b的值不变，因为数字是不可变的
+
+alist = blist = [1, 2]
+alist[0] = 10  # blist也会改变，因为列表是可变的
+
+更新列表
+•  通过下标只能更新值,不能使用标添加新值
+>>>	alist	= [10, 35, 20, 80]	
+>>>	alist[-1] = 100	
+>>>	alist[1:3] = [30,	50]	
+>>> alist[2:2]
+[]
+>>> alist[2:2] = [11,22,33,44]
+>>> alist
+[10, 35, 11, 22, 33, 44, 20, 80]
+
+列表内建函数
+列表方法			操作
+list.append(obj) 		向列表中添加一个对象obj
+list.count(obj) 		返回一个对象obj 在列表中出现的次数
+list.extend(seq) 		把序列seq的内容添加到列表中
+list.index(obj) 		返回obj对象的下标
+list.insert(index, obj) 	在索引量为index 的位置插入对象obj
+list.reverse() 		原地翻转列表
+list.sort() 		排序
+
+
+alist = [1, 2, 3, 'bob', 'alice']
+alist[0] = 10
+alist[1:3] = [20, 30]
+alist[2:2] = [22, 24, 26, 28]
+alist.append(100)
+alist.remove(24)  # 删除第一个24
+alist.index('bob')  # 返回第一个bob的下标
+blist = alist.copy()  # 相当于blist = alist[:]
+alist.insert(1, 15)  # 向下标为1的位置插入数字15
+alist.pop()  # 默认弹出最后一项
+alist.pop(2) # 弹出下标为2的项目
+alist.pop(alist.index('bob'))
+alist.sort()
+alist.reverse()
+alist.count(20)  # 统计20在列表中出现的次数
+alist.clear()  # 清空
+alist.append('new')
+alist.extend('new')
+alist.extend(['hello', 'world', 'hehe'])
+
+元组
+创建元组
+•  通过()或工厂函数tuple()创建元组
+•  元组是有序的、不可变类型
+•  与列表类似,作用于列表的操作,绝大数也可以作用于元组
+
+单元素的元组
+a = (10)  使用type 查看这是一个数值
+应该这样写
+a = (10,)
+
+“更新”元组
+•  虽然元组本身是不可变的,但是因为它同时属于容器
+类型,也就意味着元组的某一个元素是可变的容器类
+型,那么这个元素中的项目仍然可变
+
+
+案例5:用列表构建栈结构
+1.  栈是一个后进先出的结构
+2.  编写一个程序,用列表实现栈结构
+3.  需要支持压栈、出栈、查询功能
+
+先考虑行为：交互/非交互
+再考虑功能，写成函数
+最后主程序
+
+
+
+def push_it() :			\
+
+def pop_it() :			 |
+
+def view_it() :			 |>===========>    先写主结构
+
+def show_menu() :			 |
+
+if __name__ == '__main__':	 |
+
+    show_menu()			/
+
+
+
+def show_menu() :
+    cmds = {'0': push_it, '1': pop_it, '2': view_it}		里面的函数不能有()
+    promt = '''(0) push it
+(1) pop it
+(2) view it
+(3) exit
+Please input your choice(0/1/2/3)'''
+
+    while True :
+        # input()得到字符串,用strip()去除两端空白,再取下标为0的字符
+        choice = input(promt).strip()[0]
+        if choice not in '0123' :
+            print('Invalid input. Try again')
+            continue
+        if choice == '3' :
+            break
+        cmds[choice]()					#######类似于shell里面的case语句
+
+完整格式：
+
+stack = []
+
+def push_it() :
+    item = input('item to push: ')
+    stack.append(item)
+
+def pop_it() :
+    if stack :
+        print('from stack popped %s' % stack.pop())
+
+def view_it() :
+    print(stack)
+
+def show_menu() :
+    cmds = {'0': push_it, '1': pop_it, '2': view_it}
+    promt = '''(0) push it
+(1) pop it
+(2) view it
+(3) exit
+Please input your choice(0/1/2/3)'''
+
+    while True :
+        # input()得到字符串,用strip()去除两端空白,再取下标为0的字符
+        choice = input(promt).strip()[0]
+        if choice not in '0123' :
+            print('Invalid input. Try again')
+            continue
+        if choice == '3' :
+            break
+        cmds[choice]()
+
+if __name__ == '__main__':
+    show_menu()
+
+
+
+
