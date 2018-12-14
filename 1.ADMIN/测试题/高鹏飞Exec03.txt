@@ -1,0 +1,114 @@
+
+案例：复制、删除、移动
+  1. 在目录/opt下创建一个子目录 nsd
+ [root@localhost ~]# mkdir /opt/nsd
+[root@localhost ~]# ls /opt
+
+  2. 在目录/opt/nsd/创建文件readme.txt,利用vim写入内容 I Love Linux
+[root@localhost ~]# vim /opt/nsd/readme.txt 
+[root@localhost ~]# cat /opt/nsd/readme.txt
+I Love Linux
+
+  3. 将/etc/passwd 和 /etc/resolv.conf同时拷贝到/opt/nsd目录下
+[root@localhost ~]# cp /etc/passwd /etc/resolv.conf /opt/nsd
+[root@localhost ~]# ls /opt/nsd
+passwd  readme.txt  resolv.conf
+
+  4. 将文件 /etc/redhat-release复制到 /root/ 下，同时 改名为 version.txt 
+[root@localhost ~]# cp /etc/redhat-release /root/version.txt
+[root@localhost ~]# cat /root/version.txt 
+Red Hat Enterprise Linux Server release 7.4 (Maipo)
+
+  5. 将文件 /root/version.txt 移动到/opt/nsd/目录下 
+[root@localhost ~]# mv /root/version.txt /opt/nsd/
+[root@localhost ~]# ls /opt/nsd/
+passwd       readme.txt   resolv.conf  version.txt 
+
+  6. 将/home目录复制到/opt/nsd/目录下 
+[root@localhost ~]# cp -r /home /opt/nsd/
+[root@localhost ~]# ls /opt/nsd/
+home  passwd  readme.txt  resolv.conf  version.txt
+
+案例：ls命令练习
+  1. 查看根目录
+[root@localhost ~]# ls /
+
+  2. 显示根目录本身详细属性
+[root@localhost ~]# ls -ld /
+dr-xr-xr-x. 18 root root 235 3月  12 11:26 /
+
+  3. 切换到/boot目录，显示当前目录内容的详细属性，并加上易读的容量单位
+[root@localhost ~]# cd /boot/
+[root@localhost boot]# ls -lh
+
+  4. 显示/root的全部内容，包括隐藏文档
+[root@localhost boot]# ls -A /root
+
+  5. 显示/bin/bash程序，详细属性
+[root@localhost boot]# ls -ld /bin/bash
+
+
+  6. 显示/dev/cdrom光驱设备，详细属性
+[root@localhost boot]# ls -ld /dev/cdrom
+
+
+案例：mount挂载
+  1. 在根目录下创建目录结构/rhel7/dvd
+[root@localhost boot]# mkdir -p /rhel7/dvd
+
+  2. 利用图形将光盘文件rhel-server-7.4-x86_64-dvd.iso放入光驱
+点击小灯泡，点击IDE CDROM 1 连接/iso下rhel-server-7.4-x86_64-dvd.iso文件
+
+  3. 将光驱设备挂载到/rhel7/dvd目录，以/rhel7/dvd目录作为其访问点
+[root@localhost boot]# mount /dev/cdrom /rhel7/dvd/
+
+  4. 查看/rhel7/dvd/Packages目录内容
+[root@localhost boot]# ls /rhel7/dvd/Packages/
+
+  5. 将/rhel7/dvd/Packages目录中以vsftpd开头的软件包，拷贝到/opt下
+[root@localhost boot]# cp /rhel7/dvd/Packages/vsftpd* /opt
+[root@localhost boot]# ls /opt
+
+
+案例：别名与vim的使用
+  1. 为虚拟机定义一个别名，执行byebye可以实现关闭系统
+[root@localhost boot]# hostname gpf
+[root@localhost boot]# hostname
+[root@localhost boot]# alias byebye='power off'
+
+  2. 利用vim 修改文件/etc/hostname将其原有内容全部删除，写入新的内容为student.tmooc.cn
+[root@localhost boot]# vim /etc/hostname
+dd删除一行
+i切换插入模式，输入student.tmooc.cn
+ESC ：wq
+ 
+1. Linux目录结构中“/”与“/dev”主要作用？
+/ 根目录 /dev 本机所有设备的文件
+2. Linux中磁盘的表示，第三块SCSI磁盘的第二个分区如何表示？
+/dev/sdc2
+3. Linux中常见的文件系统都有哪些？
+ext4 :rh 6 的默认文件系统
+xfs ：rh 7 的默认文件系统
+swap ：交换空间（虚拟内存）
+4. Linux中图形伪字符终端的提示符构成？
+用户名@主机名 当前路径 管理员#
+5. 查看文本文件命令是？cat
+6. 查看目录内容的命令是？ls
+7. 查看主机名的命令是？hostname
+8. 查看IP地址的命令是？ifconfig
+9. 关机命令是?poweroff
+10.重启的命令是？reboot
+11.切换到/dev目录的命令是？cd /dev
+12.显示当前位置的命令是？pwd
+13.显示/root目录本身内容详细属性怎么实现？ls -ld /root/
+14.显示当前主机的内核版本的命令？uname -r
+15.查看CPU信息命令是？lscpu
+16.查看内存信息命令是？cat /proc/meminfo
+17.查看/boot目录内容如何操作？ls -l /boot
+18.查看/etc/passwd文件前两行如何操作？head -2 /etc/passwd
+19.查看/etc/passwd/中包含root的行，如何操作？grep 'root' /etc/passwd
+20.查看/etc/passwd/后两行，如何操作？tail -2 /etc/passwd
+
+
+
+
