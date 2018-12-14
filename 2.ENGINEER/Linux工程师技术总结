@@ -1,0 +1,1425 @@
+硬盘分区管理
+	基础知识：每个扇区，512字节
+	文件系统的作用：数据在空间中排列规则
+	硬盘的使用：识别硬盘 => 分区规划 => 格式化 => 挂载使用
+
+使用磁盘空间：
+    1. 查看识别的磁盘 ：lsblk
+    2. 划分分区 ：fdisk
+    3. 刷新分区 ： partprobe
+    4. 格式化分区 ：  mkfs.ext4 ，mkfs.xfs ， blkid查看格式化结果
+    5. 挂载使用 ： mount  ， df-h
+    6. 实现开机自动挂载 ：/etc/fstab
+
+一、识别硬盘
+	[root@server0 ~]# lsblk   		#查看本机识别的硬盘
+
+二、分区规划 
+  	MBR/msdos 分区模式（主引导记录分区方案）：最大支持2.2TB
+	GPT 分区模式：最大支持18EB（1EB=1024PB,1PB=1024TB0）
+   	分区的类型：主分区、扩展分区、逻辑分区
+
+   MBR最多只能有4个主分区：1~4个主分区,或者 3个主分区+1个扩展分区(可再分为n个逻辑分区)
+ 	扩展分区是一个容器，不能格式化
+	[root@server0 /]# fdisk /dev/vdb 					#打开fdisk软件
+	   n 创建新的分区----->回车----->回车---->回车----->在last结束时 +2G
+	   p 查看分区表
+	   d 删除分区
+	   w 保存并退出
+	[root@server0 ~]# lsblk 							#查看分区结果，大小，挂载点				
+	[root@server0 ~]# ls  /dev/vdb[1-2]
+
+三、分区格式化 
+	EXT4格式化：mkfs.ext4  分区设备路径
+	XFS格式化：mkfs.xfs   分区设备路径
+	FAT格式化：mkfs.vfat  分区设备路径
+	[root@server0 ~]# mkfs.ext4  /dev/vdb1
+	[root@server0 ~]# mkfs.xfs   /dev/vdb2
+	[root@server0 ~]# blkid  /dev/vdb1       # 查看分区文件系统类型
+	[root@server0 ~]# blkid  /dev/vdb2       # 查看分区文件系统类型
+
+四、挂载使用
+	 [root@server0 ~]# mkdir /part1
+	 [root@server0 ~]# mount /dev/vdb1  /part1
+	 [root@server0 ~]# mount /dev/vdb2  /part2
+	 mount: 挂载点 /part2 不存在
+	 [root@server0 ~]# mkdir /part2
+	 [root@server0 ~]# mount /dev/vdb2  /part2
+	 [root@server0 ~]# df -h   #查看正在挂载的设备信息
+
+五、综合分区，实现开机自动挂载
+	注意：创建的第四个分区为拓展分区，将所有剩下的空间都划给第四个分区，以便后期再划分逻辑分区
+	配置文件vim /etc/fstab 的记录格式
+  设备路径        挂载点      文件系统类型      参数     备份标记      检测顺序
+  /dev/vdb1   /part1     ext4        defaults    0           0
+  /dev/vdb2   /part2     xfs         defaults    0           0
+
+验证：
+  [root@server0 ~]# df  -h
+  [root@server0 ~]# mount  -a
+  [root@server0 ~]# df  -h
+   检测/etc/fstab开机自动挂载配置文件,格式是否正确，如果正确，则对当前没有挂载的设备,进行挂载
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+LVM逻辑卷
+       作用：1.整合分散的空间      2.逻辑卷空间可以扩大
+       过程：将众多的物理卷，组成卷组，在从卷组中划分逻辑卷
+    
+创建逻辑卷：
+1.创建卷组：命令格式：vgcreate   卷组名字     分区路径
+	 [root@server0 ~]# vgcreate  systemvg  /dev/vdc[1-2]		#同时创建物理卷和卷组，支持通配符
+	 [root@server0 ~]# pvs     						#查看物理卷信息
+	 [root@server0 ~]# vgs     						#查看卷组信息
+2.从卷组中划分逻辑卷    命令格式： lvcreate -L 大小  -n 逻辑卷名字    卷组名字
+	 [root@server0 ~]# lvcreate -L 16G -n mylv systemvg		#创建一个16G的逻辑卷
+	 [root@server0 ~]# lvcreate -l 16 -n mylv systemvg		#创建一个大小为16个PE的逻辑卷，
+	 [root@server0 ~]# lvs
+3.使用逻辑卷
+	 [root@server0 ~]# mkfs.ext4 /dev/systemvg/mylv 			#用EXT4格式进行格式化
+	 [root@server0 ~]# mkdir /test
+	 [root@server0 ~]# vim /etc/fstab					#设置自动挂载
+	  /dev/systemvg/mylv   /test   ext4   defaults  0   0
+	 [root@server0 ~]# df -h
+	 [root@server0 ~]# mount -a						#激活自动挂载
+	 [root@server0 ~]# df -h
+修改PE的方式（基本用不到）：(PE：卷组划分空间的单位)
+	[root@server0 ~]# vgcreate  -s 16M systemvg  /dev/vdc[1-2]  	#若需要更大的PE，需要在创建卷组时设置，且设置的PE大小必须是2的幂次
+	[root@server0 ~]# vgchange -s  512KB  卷组名	#默认为4M，只能改成更小的PE，最小512B
+	[root@server0 ~]# vgdisplay  systemvg         	#显示卷组详细信息查看PE大小
+
+扩展逻辑卷
+1.判断卷组是否有足够的剩余空间
+	扩展卷组
+	[root@server0 ~]# vgextend   systemvg  /dev/vdc3		#加入新的物理卷拓展卷组空间
+	[root@server0 ~]# vgs
+2.扩展逻辑卷空间的大小
+	[root@server0 ~]# lvs
+	[root@server0 ~]# vgs
+	[root@server0 ~]# lvextend -L 18G /dev/systemvg/mylv	#将逻辑卷拓展到18G
+	[root@server0 ~]# lvextend -L +2G /dev/systemvg/mylv	将逻辑卷在原基础上拓展2G
+	[root@server0 ~]# vgs
+	[root@server0 ~]# lvs
+3.扩展文件系统的大小
+       ext4 :  resize2fs 
+       xfs :  xfs_growfs
+	[root@server0 ~]# df -h
+	[root@server0 ~]# resize2fs /dev/systemvg/mylv  		#刷新文件系统
+	[root@server0 ~]# df -h
+
+逻辑卷也可以缩减（不建议使用）
+1.缩减文件系统
+2.缩减空间
+
+删除逻辑卷
+	流程：删除逻辑卷（lv）---->删除卷组（vg）---->删除物理卷（pv）
+		lvremove 		 vgremove 		pvremove 
+
+Shell脚本基础
+    脚本：  可以运行文本文件，可以实现某种功能
+    提前设计可执行语句,用来完成特定任务的文件
+    将命令都写入到文本文件，然后赋予文本文件执行权限(命令的堆积)
+  • 非交互式：
+	需要提前设计,智能化,难度大
+	批量执行、效率高
+	方便在后台静悄悄地运行
+	[root@server0 ~]# vim /root/hello.sh 
+	[root@server0 ~]# chmod  +x   /root/hello.sh 	#给hello.sh统一添加x权限
+	[root@server0 ~]# /root/hello.sh     		#绝对路径执行文件
+
+规范Shell脚本的一般组成：
+ • #! 环境声明（声明下列可执行代码用什么解释器翻译）
+ • # 注释文本，方便以后查看
+ • 可执行代码
+
+简单脚本技巧：使用 | 管道操作：将前一条命令的标准输出交给后一条命令处理
+
+重定向输出:
+      >  :  只收集前面命令的正确输出，将其写入文本文件
+      2> :  只收集前面命令的错误输出，将其写入文本文件
+      &> :  收集前面命令的正确与错误输出，将其写入文本文件
+	[root@server0 ~]# cat /opt/1.txt  /etc > /opt/a.txt
+	[root@server0 ~]# cat /opt/1.txt /etc 2> /opt/a.txt 
+	[root@server0 ~]# cat /opt/1.txt /etc &> /dev/null		#/dev/null : 黑洞设备，专门收集无用的输出信息
+
+变量：会变化的量，以不变的名称，存储可以变化的值（容器）,方便以固定名称重复使用某个值，提高对任务需求、运行环境变化的适应能力
+变量定义：变量名=变量值
+   注意事项：
+	若指定的变量名已存在,相当于为此变量重新赋值
+	等号两边不要有空格
+	变量名只能由字母、数字、下划线组成,区分大小写
+	变量名不能以数字开头,不要使用关键字和特殊字符
+	${}：将变量和后面的输入区分开
+	$[ ] : 数学运算
+	$() ：将命令输出结果，作为参数，也可用反撇号``表示
+	 ''  : 让所有的特殊字符，变成普通字符
+    基本格式：
+	引用变量值:$变量名 或 ${变量名}
+	查看变量值:echo $变量名  或  echo  ${变量名}
+   
+read ：产生交互的方式，将用户从键盘上的输入，赋予一个变量来储存
+	格式：read [-p  '内容'] 变量			#-p  : 屏幕输出提示内容
+	[root@server0 ~]# vim /root/user.sh 
+	 #!/bin/bash
+	 read  -p   '请输入您要创建的用户名:'    abc
+	 useradd  $abc  &> /dev/null
+	 echo  $abc用户创建成功
+	 echo 123  |  passwd   --stdin  $abc  &> /dev/null
+	 echo  $abc用户密码设置成功
+	[root@server0 ~]# echo ${a}7
+	[root@server0 ~]# echo  $[ 10 / 3 ]     #除法运算
+	[root@server0 ~]# echo  $[ 10 % 3 ]     #取余数运算
+	[root@server0 ~]# echo '* ? [] {} | >'
+	[root@server0 opt]# mkdir $(date +%F)
+	[root@server0 opt]# mkdir $(hostname)-$(date +%F)
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+环境变量
+	USER ： 储存当前登陆的用户名
+	[root@server0 /]# echo  $USER
+	[student@server0 ~]$ echo  $USER
+
+位置变量
+	在执行脚本时写在脚本后面的命令行参数
+	格式：*.sh  $1  $2  $3 ....
+	[root@server0 /]# vim /root/2.sh
+	 #!/bin/bash
+	 echo $1
+	 echo $2
+	 echo $3
+	[root@server0 /]# /root/2.sh  haha  xixi  hehe
+	 haha
+	 xixi
+	 hehe
+
+预定义变量
+	$# :已加载的位置变量的个数(运行脚本，脚本后面书写了多少个参数)
+	$* :所有位置变量的值
+	$? :程序退出后的状态值,0表示正常,其他值异常,shell脚本编写时用exit n控制输出的值
+	[root@server0 /]# vim /root/2.sh
+	 #!/bin/bash
+	 echo $1
+	 echo $2
+	 echo $3
+	 echo $#
+	 echo $*
+	[root@server0 /]# /root/2.sh  100  200  300 400 500  600
+	100
+	200
+	300
+	6
+	100 200 300 400 500 600
+
+测试操作：[ 测试表达式 ]
+常用的测试选项
+• 检查文件状态
+	-e：文档存在
+	-d：目录存在
+	-f：文本文件存在
+	-r：存在并且有读取权限
+	-w：存在并且有写入权限
+	-x：存在并且有执行权限
+• 比较整数大小(e代表等于)
+	-gt ： 大于
+	-ge ： 大于等于
+	-eq ： 等于
+	-ne ： 不等于
+	-lt ： 小于
+	-le ： 小于等于
+• 字符串比对
+	== : 相等
+	!=  : 不相等
+
+	[root@server0 /]# [  abc  ==  abc ]
+	[root@server0 /]#  echo $?
+	[root@server0 /]# [  abc  !=  bcd  ]
+	[root@server0 /]#  echo $?
+	[root@server0 /]# [  $USER  ==  root  ]
+	[root@server0 /]#  echo $?
+
+if选择结构：
+1.if双分支处理：
+	 if   [条件测试];
+	 then
+	   命令序列xx
+	 else
+	   命令序列yy
+	 fi
+
+请书写一个随机数抽奖脚本
+    计算机产生一个10以内的随机数字，$RANDOM产生一个随机整数，没有大小限制
+    用户 输入一个10以内的随机数字
+    如果 用户 输入 与 计算机 产生的数字 ，相等 则 中奖了
+    如果 用户 输入 与 计算机 产生的数字 ，不相等 则 谢谢惠顾
+[root@server0 /]# vim /root/if02.sh 
+ #!/bin/bash
+ read -p  '请输入一个10以内的随机数字:'    num01
+ num02=$[  $RANDOM  %  10  ]
+ if  [  $num01  -eq  $num02  ];then
+   echo  恭喜您中奖了，您猜对了
+ else
+   echo  谢谢惠顾
+   echo  正确的数字为 $num02
+ fi
+[root@server0 /]# /root/if02.sh 
+
+请书写一个脚本：
+	判断用户输入一个IP地址，本机是否能与之通信
+	能则输出  可以通信
+	不能则输出 不可以通信
+[root@server0 /]# vim   /root/if03.sh
+#!/bin/bash
+read  -p  '请输入您要测试的ip地址:'    ip
+ping  -c  2  $ip  &>  /dev/null
+ if  [  $?  -eq  0  ];then
+   echo  可以通信
+ else
+   echo  不可以通信
+ fi
+
+2.if多分支处理：
+	if  [条件测试1];
+	then
+	   命令序列xx
+	elif  [条件测试2];
+	then
+	   命令序列yy
+	elif  [条件测试3];
+	then
+	   命令序列aa
+	else
+	   命令序列zz
+	fi
+编写一个判断脚本
+在 server0 上创建 /root/foo.sh 脚本
+ 1)当运行/root/foo.sh  redhat,输出为fedora
+ 2)当运行/root/foo.sh  fedora,输出为redhat
+ 3)当没有任何参数或者参数不是 redhat 或者fedora时,其错误输出产生以下信息: /root/foo.sh redhat|fedora
+[root@server0 /]# vim /root/foo.sh
+#!/bin/bash
+ if  [  $#  -eq  0  ];then                     	#当参数个数为0 
+     echo '/root/foo.sh redhat|fedora'  >&2	#返回错误提示
+     exit 2 						#返回错误码
+ elif [  $1  ==   redhat ];then
+   echo fedora
+ elif [  $1  ==  fedora ];then
+   echo redhat 
+ else
+    echo '/root/foo.sh redhat|fedora'   >&2
+    exit 3
+ fi
+
+
+for循环处理:
+ for  变量名  in  值列表
+   do
+      命令序列
+   done
+编写一个添加用户的脚本
+#!/bin/bash
+ for i  in  zhangsan  lisi   wangwu   dc  haha   xixi   duanwu  zhongqiu
+ do
+   useradd  $i  &>  /dev/null
+   echo  $i创建成功
+ done
+
+编写一个通过文本文件添加用户的脚本
+ #!/bin/bash
+ for i  in  $(cat  /root/tarena.txt)
+ do
+   useradd  $i  &>  /dev/null
+   echo  $i创建成功
+ done
+#################################################################
+#!/bin/bash
+if [ $# -eq 0 ];then
+        echo 'Usage:/root/batchusers <userfile>' >&2
+        exit 3
+elif [ -f $1 ];then
+        for a in `cat $1`
+        do
+                 useradd -s /bin/false $a
+                 echo $a创建成功
+        done
+else
+        echo 'Input file not found' >&2
+        exit 3
+fi
+#################################################################
+• 系统安全保护：Security-Enhanced Linux
+	美国NSA国家安全局主导开发,一套增强Linux系统安全的强制访问控制体系
+	集成到Linux内核(2.6及以上)中运行
+	RHEL7基于SELinux体系针对用户、进程、目录和文件提供了预设的保护策略,以及管理工具
+	SELinux控制每个软件能否读写某些资料
+	SELinux有安全上下文件
+
+• SELinux的运行模式：
+	enforcing(强制)<----->permissive(宽松)  可以不重启系统切换
+	  ！	切换需要重启系统
+	disabled(彻底禁用)
+
+• 切换运行模式：
+	临时切换:setenforce 1|0   #enforcing | permissive
+	永久配置: /etc/selinux/config 文件
+	[root@server0 ~]# getenforce       #查看当前SELinux运行模式
+	[root@server0 ~]# setenforce 0     #修改当前SELinux运行模式为permissive
+	[root@server0 ~]# getenforce 
+	[root@server0 ~]# vim /etc/selinux/config 		#永久修改SELinux运行模式为permissive
+	SELINUX=permissive
+
+SELinux设置规则：httpd这个软件，只能读写标签是httpd_sys_content_t
+	[root@server0 ~]# ls -Z			#查看安全标签，每个文件或目录都有一个标签，这个标签控制了哪些程序能读什
+	[root@server0 ~]# echo "nb" > nb.html
+	[root@server0 ~]# ls -Z  nb.html
+	[root@server0 ~]# mv nb.html  /var/www/html/				#mv移动文件，标签会被保留，cp拷贝文件，标签不会保留
+	[root@server0 ~]#firefox http://server0.example.com/nb.html		#因为SELinux的标签不对，所有无法访问
+
+chcon：修改上下文标签
+	chcon -R -t 标签内容   文件或目录名
+	[root@server0 ~]# chcon -R -t httpd_sys_content_t /var/www/html/nb.html
+	[root@server0 ~]#firefox http://server0.example.com/nb.html		#修改标签后，再次访问就可以成功
+
+--------------------------------------------------------------------------------------------------------------------------------------------------
+防火墙策略管理
+	作用：隔离
+	分类：硬件防火墙、软件防火墙
+
+搭建基本的Web（http：超文本传输协议）
+  服务端  ： server0.example.com
+    1.安装服务端软件 httpd  (作者：Apache:开源软件基金会)
+	[root@server0 ~]# yum install -y httpd
+    2.启动httpd服务，设置为开机自起的服务
+	[root@server0 ~]# systemctl restart httpd
+	[root@server0 ~]# systemctl enable httpd
+    3.书写自己的主页
+         默认网页文件路径：/var/www/html
+         默认网页文件名字 : index.html
+         默认书写网页内容的语言： html
+	[root@server0 ~]# vim  /var/www/html/index.html
+	  <marquee><font color=red><h1>     NSD1801	#只需要测试功能即可
+	    滚动            字体颜色    标题字体      内容
+
+搭建基本的FTP（文件传输协议）
+    1.安装服务端软件 vsftpd  
+    2.启动vsftpd服务，设置为开机自起的服务
+    3. 默认共享路径：/var/ftp
+
+Linux软件防火墙：
+	系统服务:firewalld
+	管理工具:firewall-cmd（命令）、firewall-config（图形）
+	命令 ：firewall-cmd  选项     参数
+	常用选项：
+		设置为永久配置：--permanent
+		要设置的区域：--zone=
+		查看区域规则：--list-all
+		新增端口相关：--add-forward-port= 
+		删除端口相关：--remove-forward-port=
+		新增服务：--add-service= 
+		删除服务： --remove-service=
+		新增IP：--add-source= 
+		删除IP：--remove-source=
+		获取默认区域：--get-default-zone
+		设置默认区域：--set-default-zone=
+		重新加载防火墙：--reload
+		
+• 根据所在的网络场所区分,预设保护规则集：
+	public:仅允许访问本机的sshd等少数几个服务
+	trusted:允许任何访问
+	block:阻塞任何来访请求
+	drop:丢弃任何来访的数据包
+
+• 防火墙判定进入哪一个区域的规则：
+  1.查看客户端请求数据包中，源IP地址，查看自己所有的区域中哪一个区域有该源IP地址的策略，则进入哪一个区域。规则匹配：匹配即停止
+  2.如果 规则1 不符合，则进入默认区域
+
+ 宽松方式1（黑名单）：默认区域为trusted，将想要拒绝的源IP地址放入到block或drop
+ 严格方式2（白名单）：默认区域为block或drop，将想要允许的源IP地址放入到trusted
+	[root@server0 ~]# firewall-cmd --get-default-zone       #查看默认区域
+	[root@server0 ~]# firewall-cmd --zone=public --list-all  #查看public区域的规则
+	[root@server0 ~]# firewall-cmd   --set-default-zone=public         #修改默认区域
+	[root@server0 ~]# firewall-cmd   --zone=public   --list-all        #查看public区域规则
+	[root@server0 ~]# firewall-cmd   --zone=public --add-service=ftp   #为区域public中添加httpd服务
+	[root@desktop0 ~]# firefox ftp://172.25.0.11   #可以访问 
+	[root@desktop0 ~]# firefox  172.25.0.11        #不可以访问 
+	[root@server0 ~]# firewall-cmd   --zone=public   --add-service=http #为区域中添加http服务
+	[root@desktop0 ~]# firefox  172.25.0.11   #可以访问 
+	[root@server0 ~]# firewall-cmd  --permanent  --zone=public  --add-service=http
+	[root@desktop0 ~]# firewall-cmd   --reload 			#重新加载防火墙配置，使永久配置生效
+	[root@desktop0 ~]# firewall-cmd   --permanent  --zone=block  --add-source=172.25.0.10	#禁IP
+
+• 端口：数字（编号）：标识进程或程序
+• 数据包包含：源IP地址  目标ip地址   数据      目标端口号
+	http :  默认端口80   ，加密端口443
+	FTP :  默认端口21
+
+• 端口转发
+	[root@desktop0 ~]# firewall-cmd --add-forward-port=port=5423:proto=tcp:toport=80 	#设置端口为5423，且使用TCP协议的数据传入80端口
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+• 配置高级连接（聚合连接\网卡绑定\链路聚合）
+	热备份(activebackup)：连接冗余(活跃状态、备份状态)
+	轮询式(roundrobin)：流量负载均衡
+	模式：eth1：team0-slave + eth2：team0-slave =>虚拟网卡:team0:master 
+
+• 制作网卡绑定
+ 1.制作虚拟网卡 team0           #"runner": {"name": "activebackup"}  参考 man  teamd.conf  全文查找/example  按n跳转匹配项 
+
+ nmcli connection  add  type  team  autoconnect  yes  con-name  team0  ifname  team0  config  '{"runner": {"name": "activebackup"}}'
+ 	       连接     添加  类型为  聚合    每次开机自动启用    配置文件命名        显示的名字为   内部成员工作模式            热备份
+
+ 2. 为 team0添加成员
+ nmcli connection add type team-slave  con-name team0-1 ifname eth1 master team0
+	      连接     添加  类型 聚合的内部成 内部成员命名              网卡原名   设置主设备
+ nmcli connection add type team-slave  con-name team0-2 ifname eth2 master team0
+
+
+3.配置team0的ip地址与激活
+ nmcli connection  modify  team0  ipv4.method  manual ipv4.addresses  192.168.1.1/24  connection.autoconnect  yes	#配置网卡IP
+ nmcli connection up team0     #激活team0网卡
+ nmcli connection up team0-1   #激活team0-1成员
+ nmcli connection up team0-2   #激活team0-2成员
+
+• 制作网卡错误的解决办法：删除后重新执行以上步骤
+	[root@server0 ~]# nmcli connection delete team0
+	[root@server0 ~]# nmcli connection delete team0-1
+	[root@server0 ~]# nmcli connection delete team0-2
+
+• 专用于team测试查看的命令
+	[root@server0 ~]# teamdctl  team0  state     #查看team0信息
+	[root@server0 ~]# ifconfig  eth1   down      #禁用eth1网卡
+	[root@server0 ~]# teamdctl  team0  state     #查看team0信息
+	[root@server0 ~]# ifconfig  eth1   up        #开启eth1网卡
+
+• team配置文件存放路径：/etc/sysconfig/network-scripts/ifcfg-team0
+
+
+配置SMB共享（跨平台的共享：Windows 与  Linux）
+• Samba 软件项目
+	用途:为客户机提供共享使用的文件夹
+	协议:SMB(TCP 139)、CIFS(TCP 445)
+• 所需软件包:samba
+• 系统服务:smb
+
+客户端访问服务端资源：
+	1.服务本身访问控制
+	2.目录的本地权限
+	3.SELinux访问控制
+	4. 防火墙策略控制
+
+服务端：设置只读共享
+	1.安装软件包:samba
+	[root@server0 ~]# yum  -y  install  samba
+
+	2.建立Samba共享帐号
+	[root@server0 ~]# useradd harry
+	[root@server0 ~]# useradd kenji
+	[root@server0 ~]# useradd chihiro
+	[root@server0 ~]# pdbedit -a harry     #将本地用户harry设置为Samba共享帐号
+	[root@server0 ~]# pdbedit -a kenji     
+	[root@server0 ~]# pdbedit -a chihiro
+	[root@server0 ~]# pdbedit -L           #显示本地都有那些Samba共享帐号
+
+	3. 修改配置文件设置Samba共享
+	[root@server0 ~]# mkdir  /common
+	[root@server0 ~]# echo  123  >  /common/1.txt
+	[root@server0 ~]# ls  /common/
+	[root@server0 ~]# vim /etc/samba/smb.conf 
+		workgroup = STAFF                #设置工作组
+	  [common]                              #设置共享名
+	    	path = /common                      #设置共享的实际路径
+
+	4.重起smb服务，设置开机自起
+	[root@server0 ~]# systemctl restart smb    #重起服务
+	[root@server0 ~]# systemctl enable smb     #设置开机自起
+
+	5. SELinux设置布尔值（功能的开关），需要加 -P 选项才能实现永久设置
+	[root@server0 ~]# getsebool  -a  |  grep  samba       #查看所有布尔值
+	[root@server0 ~]# setsebool  samba_export_all_ro  on  #修改布尔值的只读开关
+
+	6.设置防火墙
+	[root@server0 ~]# firewall-cmd  --set-default-zone=trusted 
+
+服务端：设置可读写共享
+	7.修改配置文件，声明chihiro可写
+	[root@server0 ~]# vim /etc/samba/smb.conf
+		  [devops]
+	 	 	path = /devops
+		   	write list = chihiro			  #设置chihiro可以读写
+
+	8.设置本地权限
+	[root@server0 ~]# setfacl -m  u:chihiro:rwx  /devops/
+	[root@server0 ~]# getfacl  /devops/
+
+	9.修改SELinux功能开关
+	[root@server0 ~]# getsebool -a | grep samba
+	[root@server0 ~]# setsebool samba_export_all_rw on
+
+	10.重启服务
+	[root@server0 ~]#  systemctl  restart  smb    #重起服务
+
+客户端操作：只读和读写都是一样操作
+	1.设置防火墙
+	[root@desktop0 ~]# firewall-cmd  --set-default-zone=trusted 
+
+	2.安装软件包:samba-client
+	[root@desktop0 ~]# yum -y install samba-client
+
+	3.查看对端的共享名
+	[root@desktop0 ~]# smbclient  -L  172.25.0.11
+	Enter root's password: 			#按回车跳过
+
+	4. 访问对端的共享
+	[root@desktop0 ~]# smbclient  -U  harry  //172.25.0.11/common
+	Enter harry's password: 
+	Domain=[STAFF] OS=[Unix] Server=[Samba 4.1.1]
+	smb: \> 
+
+客户端使用挂载点访问
+	1.创建挂载点
+	[root@desktop0 ~]# mkdir  /mnt/nsd   
+
+	2.所需软件包:cifs-utils
+	[root@desktop0 ~]# yum  -y install  cifs-utils
+	[root@desktop0 ~]# mount -o user=harry,pass=123  //172.25.0.11/common   /mnt/nsd/
+	[root@desktop0 ~]# vim  /etc/fstab 
+	 //172.25.0.11/common   /mnt/nsd   cifs  defaults,user=harry,pass=123,_netdev   0  0	#_netdev : 标识本设备为网络设备（先启动网络服务具备ip地址等网络参数后，再进行挂载本设备）
+															cifs：samba共享设备的网络文件系统
+	[root@desktop0 ~]# mount  -a       #检测/etc/fstab是否书写正确
+	[root@desktop0 ~]# df -h
+
+   多用户（multiuser）的samba共享，专为普通用户设计，BUG多
+	SMB客户端的 multiuser 挂载技术
+	管理员只需要作一次挂载，管理员无法访问挂载点，普通用户不切换新的用户也无法访问
+	客户端在访问挂载点时,若需要不同权限,可以临时切换为新的共享用户(无需重新挂载)
+    实现方式
+	1)挂载SMB共享时启用 multiuser 支持
+	2)使用 cifscreds 临时切换身份
+	操作：修改开机自动挂载配置文件，添加参数
+		multiuser,提供对客户端多个用户身份的区分支持
+		sec=ntlmssp,提供NT局域网管理安全支持
+		[root@desktop0 ~]# vim /etc/fstab 
+		//172.25.0.11/devops /mnt/dev cifs defaults,user=kenji,pass=123,_netdev,multiuser,sec=ntlmssp 0 0
+		[root@desktop0 ~]# mount -a
+		[root@desktop0 ~]# df -h
+		[root@desktop0 ~]# su - student
+		[student@desktop0 ~]$ cifscreds add -u chihiro 172.25.0.11  #提交新的身份
+		[student@desktop0 ~]$ ls /mnt/dev/
+		[student@desktop0 ~]$ touch /mnt/dev/haha.txt
+		[student@desktop0 ~]$ exit
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+配置NFS共享（Linux内部）：Network File System（网络文件系统）
+	用途:为客户机提供共享使用的文件夹
+	协议:NFS(TCP/UDP 2049)、RPC(TCP/UDP 111)
+	所需软件包: nfs-utils
+	系统服务: nfs-server
+
+服务端：
+1.所需软件包: nfs-utils
+[root@server0 ~]# rpm -q nfs-utils
+
+2.修改 /etc/exports
+	文件夹路径  客户机地址(权限)   客户机地址(权限) .. ..
+	[root@server0 ~]# vim /etc/exports
+	/public    *(ro)					#设置所有用户只读/public
+	[root@server0 ~]# mkdir  /public
+	[root@server0 ~]# systemctl restart  nfs-server
+	[root@server0 ~]# systemctl enable  nfs-server
+
+客户端：参照家目录挂载
+	[root@desktop0 ~]# mkdir /mnt/nfs
+	[root@desktop0 ~]# showmount -e 172.25.0.11     #查看有哪些nfs共享
+	[root@desktop0 ~]# vim /etc/fstab               #实现开机自动挂载
+	172.25.0.11:/public  /mnt/nfs   nfs   defaults,_netdev  0  0
+	[root@desktop0 ~]# mount -a
+	[root@desktop0 ~]# df -h
+
+
+iSCSI共享（磁盘共享)internet scsi
+iscsi服务需要的三个概念:
+	backstore：后端真正的存储设备(实物)
+	target:共享名(虚拟)
+	lun:绑定、关联存储设备
+target的共享名有要求[要符合iqn规范]:iqn.年-月(.日).反转域名:任意字串
+	如:iqn.2018-02.com.example:data
+
+步骤：
+	a)在server0上准备一个磁盘分区(vdb1)3G
+	b)安装软件包，修改配置
+		[root@server0 ~]#  yum -y install targetcli
+		[root@server0 ~]#  targetcli
+		/>  backstores/block create back_store /dev/vdb1	#把刚刚分的分区加入后端存储
+		/>  iscsi/ create iqn.2018-02.com.example:data	#创建一个iscsi共享（共享名称)
+		注意：创建iscsi共享名时如果提示：WWN not valid as: iqn, naa, eui，则说明名称不符合规则
+		/>  iscsi/iqn.2018-02.com.example:data/tpg1/luns create /backstores/block/back_store 	#把共享名和后端的设备通过lun关联在一起
+		/> iscsi/iqn.2018-02.com.example:data/tpg1/acls create iqn.2018-02.com.example:desktop0	#创建了一个访问的口令,以后仅知道口令的客户端才可以访问共享
+		/>  iscsi/iqn.2018-02.com.example:data/tpg1/portals create 172.25.0.11		#以后客户端访问本机的172.25.0.11的3260端口旧可以访问到共享
+		/>  saveconfig
+		/>  exit
+		[root@server0 ~]#  firewall-cmd --set-default-zone=trusted
+	c)客户端访问共享
+		[root@server0 ~]# yum -y install iscsi-initiator-utils	#在实验环境可以跳过，生产环境需要确认
+		[root@server0 ~]# vim /etc/iscsi/initiatorname.iscsi
+		InitiatorName=iqn.2018-02.com.example:desktop0		#注意在这里给客户端配置访问口令，一定要与服务器的ACL一致
+		[root@server0 ~]# man iscsiadm   				#搜索/example
+		[root@server0 ~]# iscsiadm --mode discoverydb --type sendtargets --portal 172.25.0.11 --discover		#发现对方服务器上的共享
+		[root@server0 ~]# iscsiadm --mode node --targetname iqn.2018-02.com.example:data --portal 172.25.0.11:3260 --login   #挂载服务器上的共享
+		PS：如果挂载提示authentication，口令不对
+		[root@server0 ~]# systemctl restart iscsid
+
+DB(database):数据库,存放数据的地方
+DBMS(DB manager system）:数据库管理系统，具体的产品：excel,access,mysql,sql-server,oracle
+RHEL7内置的数据库是MariaDB
+
+		[root@server0 ~]# yum -y install mariadb-server mairadb   #前者是服务器，后者时客户端，使用客户端软件连接服务器做增，删，改，查等操作
+		[root@server0 ~]# systemctl start mariadb   #启动服务
+		[root@server0 ~]# mysql				#默认mariadb数据库仅有一个账户root，且不设置密码
+		MariaDB [(none)]> show databases;	#查看有哪些数据库(数据库就是目录)
+		MariaDB [(none)]> use mysql;	#进入数据库(mysql)
+		MariaDB [mysql]> show tables;	#查看有哪些数据表
+		MariaDB [mysql]> select * from user;	#查看数据表里的数据
+		MariaDB [(none)]> create database b;	#创建一个新的数据库，名称为b
+		MariaDB [(none)]> drop database b;	#删除某个数据库
+		MariaDB [(none)]> create database nb;
+		MariaDB [(none)]> use nb;
+		MariaDB [(nb)]>  create table info(id int,name varchar(10),password varchar(20));	#创建数据表，创建的数据库都在/var/lib/mysql目录
+							#创建一个表,表名是info，第1列是id，类型是数字，第2列是name，类型是字符串,10位，第3列是password，类型是字符串，20位
+		MariaDB [(nb)]> insert into info values(1,'tom','123456');	#往info这个表里查入数据，id号,名字，密码
+		MariaDB [(nb)]> insert into info values(3,'jerry','123456'),(4,'lucy','123456');
+		MariaDB [(nb)]> select name,password from info;	#仅查看表中的用户和密码信息[不显示id信息]
+		MariaDB [(nb)]> select * from info where password='123456'	#查看info表中password是123456的所有数据
+		MariaDB [(nb)]>update info set password='123' where name='lily';	#仅当用户名是lily时才更新她的密码为123
+		MariaDB [(nb)]> select * from info where password='123456' and id=1	#列出info表中的数据，密码为123456并且id等于1
+		MariaDB [(nb)]> select * from info where password='123456' or id=1	#列出info表中的数据，密码为123456或者id等于1
+		MariaDB [nb]> drop table info;	#删除数据表info
+		MariaDB [(nb)]> describe info;		#查看表结构
+		MariaDB [(none)]> grant  all  on  nb.* to  tom@'localhost' identified  by  '123456';
+			#创建tom用户，只能本地登陆，若需要远程登陆，@后需要写上IP地址，拥有对nb数据库下的所有表的所有权限，也可以写具体的指令[select,insert]，identified by设置密码
+		MariaDB [mysql]> exit		#退出数据库系统
+		[root@server0 ~]# mysqladmin -uroot password '123456'	#给mariadb数据库的管理员root修改密码,密码为123456
+		[root@server0 ~]# mysql    	#直接登陆数据库会失败
+		[root@server0 ~]# mysql -u root -p123456  #使用用户与密码登陆
+		[root@server0 ~]# mysql -u tom -p123456
+
+数据库的备份与还原
+		[root@server0 ~]# mysqldump -uroot -p123456 nb > my.bak		#把名称为nb的数据库备份，备份到my.bak文件
+		[root@server0 ~]# mysql -uroot -p123456 nb < my.bak		#使用my.bak这个备份文件，还原名称为nb的数据库，需要数据库中有nb这个数据库
+
+多表查询
+		MariaDB [(nb)]> SELECT count(*) FROM base,location WHERE base.name="Barbara" AND location.city="Sunnyvale" AND base.id=location.id;
+
+
+web服务器【把某个目录共享】放网页文件.html
+	网站基于B/S设计（浏览器/服务器）
+	在服务器上共享的文件：HTML
+	软件包:httpd
+
+	在服务端上操作：
+	[root@server0 ~]# firewall-cmd --set-default-zone=trusted
+	[root@server0 ~]# yum -y install httpd
+	[root@server0 ~]# systemctl start httpd		
+	[root@server0 ~]# cd /var/www/html/			#默认共享了/var/www/html/目录
+	[root@server0 ~]# vim index.html
+	<html>
+	<head>
+	<title>Hello world</title>
+	</head>
+	<body>
+	<h1> HeHe</h1>
+	<h2> Hehe</h2>
+	<font color=red>哈哈</font>
+	</body>
+	</html>
+
+httpd的配置文件:
+	/etc/httpd/conf/httpd.conf      主配置文件
+	/etc/httpd/conf.d/   		    目录
+
+	[root@server0 ~]# vim /etc/httpd/conf/httpd.conf
+	Listen 80					#服务器监听的端口
+	DocumentRoot "/var/www/html"		#网站的根路径在哪里，也就是页面存放的位置
+	DirectoryIndex index.html		#默认的首页叫什么名字
+	#ServerName www.example.com:80		#服务器的域名是什么
+	IncludeOptional conf.d/*.conf		#加载conf.d目录下的所有配置文件
+	Options Indexes FollowSymLinks		#在没有index.html的情况下查看所有目录下的文件
+
+一台服务器，安装一个httpd，做n个网站，防止资源浪费
+虚拟主机类型：
+	基于IP地址（要求服务器有多个IP）
+	基于域名（要求卖多个域名)
+	基于端口
+
+默认测试域名：server0.example.com，www0.example.com，webapp0.example.com
+	[root@server0 ~]# vim /etc/httpd/conf.d/server.conf	#创建新的配置文件
+	<VirtualHost *:80>
+	    	ServerName server0.example.com
+		DocumentRoot /var/www/html
+	</VirtualHost>
+	[root@server0 ~]# vim /etc/httpd/conf.d/www.conf
+	<VirtualHost *:80>
+	    	ServerName www0.example.com
+		DocumentRoot /var/www/dachui
+	</VirtualHost>
+	[root@server0 ~]# mkdir /var/www/dachui
+	[root@server0 ~]# vim /var/www/dachui/index.html
+	[root@server0 ~]# cd /var/www/html/
+	[root@server0 ~]# vim index.html
+	hello world
+	[root@server0 ~]# vim test.html
+	nb is nb
+	[root@server0 ~]# mkdir haha
+	[root@server0 ~]# echo "xixi" > haha/index.html
+	[root@server0 ~]# chcon -R -t httpd_sys_content_t /var/www/html/nb.html	#设置SELinux标签
+	[root@server0 ~]# systemctl  restart httpd
+
+在客户端上操作:
+	[root@server0 ~]#curl http://server0.example.com	#打开的是之前实验创建的第1个页面
+	[root@server0 ~]#curl http://www0.example.com	#打开的是刚刚创建的第2个页面
+	[root@server0 ~]#curl http://server0.example.com/test.html
+	[root@server0 ~]#curl http://server0.example.com/haha/
+
+网站的ACL访问控制，语法格式如下：
+	<Directory 目录的绝对路径>
+	Require all denied|granted	或	Require ip IP或网段地址 .. ..
+	</Directory>
+
+	[root@server0 ~]#vim /etc/httpd/conf.d/server.conf		#追加写入
+	<Directory "/var/www/html/jpg">
+	Require ip 172.25.254.250 172.25.0.0/24			#仅允许172.25.0.*和172.25.254.250访问jpg
+	</Directory>
+	[root@server0 ~]#systemctl restart httpd
+
+静态页面：html、mp3、flv、jpg、gif等都是静态
+动态页面：httpd这个软件本身不能解释，需要被服务器的解释器解释的页面，如：java,php,python,shell
+
+服务端：
+	[root@server0 ~]#yum -y install mod_wsgi	#mod_wsgi支持httpd与python交互，当用户要访问一个python脚本时，httpd可以把页面脚本给python执行一遍，然后把执行的结果给用户
+								#客户端请求<----浏览器---->httpd<----mod_wsgi----->python
+	[root@server0 ~]# mkdir /var/www/webapp/
+	[root@server0 ~]# cd /var/www/webapp/
+	[root@server0 webapp]# wget http://classroom/pub/materials/webinfo.wsgi
+	[root@server0 webapp]# vim /etc/httpd/conf.d/webapp.conf
+	Listen 8909		#开启一个端口
+	<VirtualHost *:8909>  //使用前面开启的端口
+		ServerName   webapp0.example.com
+		DocumentRoot /var/www/webapp
+		WSGIScriptAlias /  /var/www/webapp/webinfo.wsgi	#当访问网站的根时，等同于访问/var/www/webapp/webinfo.wsgi脚本文件
+	</VirtualHost>
+ 
+	[root@server0 ~]# systemctl restart httpd		#重启失败，根据提示执行journalctl -xn，里面的SELinux的命令提示
+	[root@server0 ~]# semanage port -a -t http_port_t -p tcp 8909	#-a是添加一台规则，-t是指
+定http能使用什么端口，-p允许httpd使用tcp的8090端口
+
+HTTPS:网站加密
+	HTTP是明文协议，网络中传输的任何数据都是明文,包括用户和密码，如果有人抓包，所有数据都可以获得
+
+加密算法：
+      对称算法(AES,DES）：加密和解密是一把钥匙，适合单机加密
+      非对称算法(RSA,DSA)：加密用公钥，解密用私钥
+      信息摘要(md5,sha512,sha265)：数据完整性校验(检查数据是否被人修改过)： md5sum  anaconda-ks.cfg	
+
+服务器操作：
+	[root@server0 ~]# yum -y install mod_ssl		#安装该软件包让httpd支持加密网站
+这三个密钥原则上放哪都可以，但是有默认存放位置：
+	公钥(证书)：*.crt ：/etc/pki/tls/certs/
+	根证书(上面的私钥和公钥是谁提供的)：*.crt ：/etc/pki/tls/certs/
+	私钥：*.key ：/etc/pki/tls/private/
+	[root@server0 ~]# vim /etc/httpd/conf.d/ssl.conf
+	<VirtualHost *:443>  		#默认加密端口是443
+	59: ServerName server0.example.com
+	60: DocumentRoot /var/www/html/
+	100:SSLCertificateFile  /etc/pki/tls/certs/server0.crt		#使用哪个密钥加密数据（公钥）
+	107:SSLCertificateKeyFile  /etc/pki/tls/private/server0.key	#使用哪个密钥解密数据（私钥）
+	122:SSLCACertificateFile /etc/pki/tls/certs/example-ca.crt	#使用哪个跟证书
+	</VirtualHost>
+	[root@server0 ~]#systemctl restart httpd
+
+客户端验证：
+	[root@desktop0 ~]# firefox http://server0.example.com		#非加密，因为用的是http
+	[root@desktop0 ~]# firefox https://server0.example.com		#加密访问，提示不安全,第一次访问需要点击“高级”，“添加例外”
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+邮件系统：postfix
+	[root@server0 ~]# vim /etc/postfix/main.cf
+		76:myhostname = server0.example.com		#主机名
+		83:mydomain = example.com			#域名的后缀，邮箱的后缀
+		99:myorigin = $mydomain				#发件人
+		116:inet_interfaces = all			#允许所有人给自己发邮件，默认仅接收本机发的邮件
+		164：mydestination = $myhostname, localhost.$mydomain, localhost		#接收的邮件域名
+	[root@server0 ~]# systemctl restart postfix
+
+	[root@server0 ~]# mail -s 标题    收件人
+			内容
+			内容
+			.					#独立的点回车表示邮件内容结束
+	[root@server0 ~]# mail				#收取邮件，q退出
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+分区工具parted
+fdisk分区只能分4个主分区，每个分区最大只能是2T
+parted可以分超过4个主分区(128),分区可以大于2T
+
+parted分区首先要选择分区的类型msdos,gpt模式，msdos就是fdisk使用的模式
+
+	[root@server0 ~]# parted /dev/vdb mklabel gpt		#选择分区模式，可以是msdos或者gpt
+	[root@server0 ~]# parted /dev/vdb mkpart primary 0 2G	#对/dev/vdb分区(mkpart),分主分区(primary)，从硬盘的开始到1G之间的容量分一个分区
+	[root@server0 ~]# parted /dev/vdb mkpart primary 2G 5G
+	[root@server0 ~]# parted /dev/vdb print			#查看分区结果
+	[root@server0 ~]# mkswap /dev/vdb2				#创建交换分区，也就是虚拟内存
+	[root@server0 ~]# vim /etc/fstab
+		/dev/vdb2  swap  swap   defaults 0 0
+	[root@server0 ~]# mount -a
+
+交换分区命令：	
+	格式：swapon [参数] 虚拟分区名 
+	参数：-a 激活所有交换分区
+	    -s 查看交换分区
+
+自定义yum服务器
+ yum源（yum服务器）：
+	需要有RPM软件包
+	数据库
+repodata/          仓库档案数据
+	filelists.xml.gz 		#软件包的文件安装清单
+	primary.xml.gz  		#软件包的基本/主要信息
+	other.xml.gz  		#软件包的其他信息
+	repomd.xml     		#提供.xml.gz下载和校验信息
+1.加载光盘直接做
+	[root@desktop0 ~]# mkdir /var/www/html/rhel
+	[root@desktop0 ~]# vim /etc/fstab
+	/iso/rhel-server-7.4-x86_64-dvd.iso /var/www/html/rhel/  iso9660  defaults,loop 0 0
+	[root@desktop0 ~]# mount -a
+备注：在光盘里有Packages，里面都是RPM包；repodata目录，里面有相关数据库
+	[root@desktop0 ~]# systemctl restart httpd
+
+2.网上下载，通常只有rpm软件
+	[root@desktop0 ~]# unzip other.zip -d /var/www/html/	#将软件解压到文件夹下
+	[root@desktop0 ~]# createrepo /var/www/html/other		#给/var/www/html/other目录下RPM软件自动生成数据库
+
+源码包安装软件
+1.下载源码包
+	[root@room9pc01 ~]# wget ftp://172.40.50.118/course/SERVICE/inotify-tools-3.13.tar.gz
+	[root@room9pc01 ~]# scp inotify-tools-3.13.tar.gz 172.25.0.11:/root/	#把文件的inotify-tools-3.13.tar.gz拷贝到172.25.0.11电脑的/root/目录
+
+2.登陆server0使用源码安装软件
+	[root@server0 ~]# tar -xf inotify-tools-3.13.tar.gz
+	[root@server0 ~]# cd inotify-tools-3.13/		#计算机的系统软件一般都是用c语言写的
+	[root@server0 ~]# ./configure  			#检查你的计算机环境
+	[root@server0 ~]#  yum -y install gcc		#gcc是linux里面的一个C语言的解释器
+	[root@server0 ~]# ./configure (--prefix=/路径)	#检查环境，并设置安装路径，如果没有指定prefix，则默认一般在/usr/local/
+	[root@server0 ~]# make					#用gcc解释器把源码转换为二进制
+	[root@server0 ~]# make install				#把编译好的二进制程序安装到你的计算机
+
+inotify-tools这个软件可以监控你的计算机目录
+	[root@server0 ~]# inotifywait -mrq  /root/		#监控root目录的所有操作
+
+systemctl命令
+	systemctl -t service		#列出启动的服务
+	systemctl -t service --all	#列出所有的服务,包括没启动的
+	systemctl stop 服务名称		#关闭服务
+	systemctl disable 服务名称	#永久关闭
+	systemctl enable 服务名称		#开机自启
+	systemctl start 服务名称		#立刻启动服务
+	systemctl restart 服务名称	#重启服务
+	systemctl status 服务名称		#查看某个服务是否启动
+
+DNS服务器搭建
+• DNS服务器的功能
+	正向解析:根据注册的域名查找其对应的IP地址
+	反向解析:根据IP地址查找对应的注册域名(不常用)
+
+ 所有完整的域名都会以 点  结尾
+	根域	.
+	一级域	.com   .cn   .us   .tw   .kr   .hk   
+	二级域	.com.cn   .net.cn   .org.cn  .edu.cn
+	三级域	.tedu.com.cn   .haha.com.cn   .xixi.com.cn
+
+• Full Qualified Domain Name (FQDN),完全合格主机名
+	站点名.域名后缀
+	站点名. .. .. .二级域.一级域
+
+• 常见的顶级（一级域名）
+	国家/地区域: .cn、.us、.kr、.hk、.tw、.. ..
+	组织域:.com、.net、.edu、.org、.gov、.mil、.. ..
+
+BIND域名服务
+• BIND(Berkeley Internet Name Daemon：伯克利大学 Internet 域名服务)
+	官方站点:https://www.isc.org/
+	安装包名称：bind-9.9.4-29.el7.x86_64：域名服务包  ;  bind-chroot-9.9.4-29.el7.x86_64：提供虚拟根支持,守护进程
+	系统服务:named
+	默认端口:TCP/UDP 53
+	运行时的虚拟根环境:/var/named/chroot/
+	主配置文件: /etc/named.conf       #设置本机负责解析的域名是什么  
+	地址库文件: /var/named/           #主机名与ip地址的对应关系
+
+搭建基本的DNS服务
+服务端：
+1.安装软件包
+	[root@svr7 ~]# yum -y  install   bind    bind-chroot  
+	
+2.修改配置文件
+	[root@svr7 ~]# vim /etc/named.conf
+	 options {
+	 	directory 	"/var/named";     #指定地址库文件存放路径
+	  };
+	 zone   "tedu.cn"  IN {            #指定本机负责解析的域名
+	  	type  master;                  #指定本机为权威主DNS服务器
+	  	file  "tedu.cn.zone";          #指定地址库文件为tedu.cn.zone
+	  };
+
+3.建立地址库文件tedu.cn.zone
+	[root@svr7 ~]# cd /var/named/
+	[root@svr7 named]# cp -p named.localhost tedu.cn.zone  #权限属性不变拷贝
+	[root@svr7 named]# ls -l tedu.cn.zone
+	-rw-r----- 1 root named 152 6月  21 2007 tedu.cn.zone	#必须保证属组是named
+	[root@svr7 named]# vim  tedu.cn.zone
+	只需改最后几行：
+	 tedu.cn.  NS  svr7	      #声明tedu.cn.域名的DNS服务器为svr7.tedu.cn.
+	 svr7	  A   192.168.4.7   	#指定svr7.tedu.cn.的ip地址为192.168.4.7
+	 www       A   1.1.1.1	
+	 ftp       A   2.2.2.2
+
+4.重起named，设置开机自启动
+	[root@svr7 named]# systemctl restart named
+	[root@svr7 named]# systemctl enable named
+
+客户端：
+	[root@pc207 ~]# echo nameserver 192.168.4.7 > /etc/resolv.conf
+	[root@pc207 ~]# nslookup www.tedu.cn
+
+多区域DNS服务（多写几个zone）
+配置文件/etc/named.conf 新增如下内容：
+	zone "qq.com" IN {
+		type master;  
+		file "qq.com.zone";
+	};
+	[root@svr7 named]# vim  qq.com.zone 
+	 qq.com.  NS  svr7
+	 svr7     A   192.168.4.7
+	 www      A   3.3.3.3
+	 ftp      A   4.4.4.4
+
+基于DNS域名的负载均衡
+	[root@svr7 named]# vim qq.com.zone 
+	qq.com.  NS  svr7
+	svr7     A   192.168.4.7
+	www      A   192.168.4.11	#DNS服务器会随机从3个IP中选择一个提供
+	www      A   192.168.4.12
+	www      A   192.168.4.13
+
+泛域名解析：以*匹配所有
+	[root@svr7 named]# vim qq.com.zone 
+	 qq.com.  NS  svr7
+	 svr7     A   192.168.4.7
+	 www      A   192.168.4.11
+	 *        A   1.2.3.4
+
+有规律的泛域名解析
+   函数： $GENERATE  生成连续范围的数字
+	[root@svr7 named]# vim qq.com.zone 
+	  qq.com.  NS  svr7
+	  svr7     A   192.168.4.7
+	  www      A   192.168.4.11
+	  ftp      A   4.4.4.4
+	  *        A   1.2.3.4
+	  $GENERATE  1-50  web$   A   192.168.10.$
+
+DNS的子域授权
+         父域 ：www.tedu.cn   ，由 svr7 服务器192.168.4.7   解析
+         子域 ：www.bj.tedu.cn  ，由 pc207 服务器 192.168.4.207 解析 
+虚拟机A：子域授权
+	[root@svr7 named]# vim  tedu.cn.zone   #指定子域的DNS服务器
+	tedu.cn.    NS  svr7
+	bj.tedu.cn. NS  pc207.bj
+	svr7        A   192.168.4.7
+	pc207.bj    A   192.168.4.207 
+	[root@svr7 named]# systemctl restart named 
+虚拟机B：搭建子域DNS负责解析bj.tedu.cn域名
+修改配置文件/etc/named.conf
+	 options {
+	 	directory 	"/var/named";     
+	  };
+	 zone   "bj.tedu.cn"   {           
+	  	type  master;                 
+	  	file  "bj.tedu.cn.zone";          
+	  };
+	[root@pc207 named]# vim   bj.tedu.cn.zone
+	 bj.tedu.cn.  NS  pc207     
+	 pc207	  A   192.168.4.207   
+	 www          A   11.12.13.14	
+测试：
+	[root@svr7 named]# nslookup  www.bj.tedu.cn   192.168.4.7
+	Server:		192.168.4.7
+	Address:	     192.168.4.7#53
+
+	Non-authoritative answer:    #非权威解答
+	Name:	www.bj.tedu.cn
+	Address: 11.12.13.14
+
+递归解析： 首选DNS服务器，跑到相应其他DNS服务器上，询问最终将结果带回来过程（客户端与首选DNS服务器交互）
+迭代查询： 首选DNS服务器 与 其他DNS服务器交互
+递归查询是默认开启的
+通过设置/etc/named.conf开关
+	recursion yes/no;
+
+缓存DNS
+	作用：加速解析过程，让客户端最快得到结果
+	全局转发:将请求转发给指定的公共DNS(其他缓存DNS),请求递归服务
+	根域迭代:依次向根、一级、二级......域的DNS服务器迭代
+	在/etc/named.conf配置中的options增加forwarders  {  176.19.0.26;  };		#176.19.0.26为公共DNS
+
+Split分离解析：
+• 当收到客户机的DNS查询请求的时候
+	能够区分客户机的来源地址
+	为不同类别的客户机提供不同的解析结果(IP地址)
+	当不同类别的客户机请求解析同一个域名时，得到的解析结果不同
+	让客户端访问网络中最近的服务器
+	方法：BIND的view视图
+	根据源地址集合将客户机分类：
+		不同客户机获得不同结果
+		客户机分类得当（所有的客户端都要找到对应的分类：兜底）
+		由上到下匹配，匹配即停止
+		所有的zone都必须在view字段里面
+格式：	 view   "nsd"    {
+	  match-clients   {  192.168.4.207;  }   #匹配客户端的地址
+	  zone "tedu.cn"    {
+	    ...... 地址库1;
+	   }; 
+	};
+
+	 view   "abc"   {
+	  match-clients  {   any;   }      		#any兜底       
+	  zone "tedu.cn"    {                           
+	   ...... 地址库2;
+	  }; 
+	};
+配置ACL队列库：
+	acl myip { IP1;IP2；... };
+修改配置文件:
+	[root@svr7 /]# vim /etc/named.conf
+	acl myip { 192.168.4.207; 192.168.4.10; 192.168.4.1; 192.168.4.123; };
+	view  "nsd"  {
+	 match-clients   {   myip  };
+	 zone  "tedu.cn"  {
+	    type  master;
+	    file  "tedu.cn.nsd";
+	    };
+	  };
+	view  "abc"  {
+	 match-clients  {   any;  };
+	 zone  "tedu.cn"  {
+	    type  master;
+	    file  "tedu.cn.abc";
+	    };
+	  };
+配置地址库文件
+	[root@svr7 /]# tail  -3  /var/named/tedu.cn.nsd 
+	tedu.cn.    NS  svr7
+	svr7        A   192.168.4.7
+	www         A   192.168.4.100
+
+	[root@svr7 /]# tail  -3  /var/named/tedu.cn.abc 
+	tedu.cn.    NS  svr7
+	svr7        A   192.168.4.7
+	www         A   1.2.3.4
+
+RAID磁盘阵列（Redundant Arrays of Inexpensive Disks：廉价冗余磁盘阵列）
+	通过硬件/软件技术,将多个较小/低速的磁盘整合成一个大磁盘
+	阵列的价值:提升I/O效率、硬件级别的数据冗余
+	不同RAID级别的功能、特性各不相同
+• RAID 0,条带模式
+	同一个文档分散存放在不同磁盘
+	并行写入以提高效率
+	至少2块磁盘
+
+• RAID 1,镜像模式
+	一个文档复制成多份,分别写入不同磁盘
+	多份拷贝提高可靠性,效率无提升
+	至少2块磁盘
+
+• RAID 0+1/RAID 1+0
+	整合RAID 0、RAID 1的优势
+	并行存取提高效率、镜像写入提高可靠性
+	至少4块磁盘
+
+• RAID5,高性价比模式（）
+	相当于RAID0和RAID1的折中方案
+	需要至少一块磁盘的容量来存放校验数据
+	至少3块磁盘
+
+• RAID6,高性价比/可靠模式
+	相当于扩展的RAID5阵列,提供2份独立校验方案
+	需要至少两块磁盘的容量来存放校验数据
+	至少4块磁盘
+
+进程管理
+	程序：静态的代码，占用硬盘
+	进程：动态的代码，占用cpu、内存
+	分类：父进程、子进程（树型结构)
+	进程的标识：PID  
+
+查看进程
+• pstree — Processes Tree
+	格式:pstree [选项] [PID或用户名]
+	常用命令选项
+	-a:显示完整的命令行
+	-p:列出对应PID编号
+	PS:systemd是所有进程的父进程 ，PID=1
+	[root@svr7 /]# pstree
+	[root@svr7 /]# pstree  lisi
+	[root@svr7 /]# pstree  -p  lisi
+	[root@svr7 /]# pstree  -ap  lisi
+
+• ps 软件
+	参数：	aux：列出正在运行的所有进程 ：用户  进程ID  CPU占比  内存占比  虚拟内存 固定内存  终端  状态  起始时间  CPU时间  程序指令
+		-elf ：列出正在运行的所有进程，其中PPID是该进程的父进程的PID
+
+• top 交互式工具
+	格式:top [-d 刷新秒数]
+	[root@svr7 ~]# top  -d  1 
+	按大写的P  按CPU占有比例降序排列
+	按大写的M  按内存占有比例降序排列
+
+• pgrep （Process Grep）：检索进程
+	格式：pgrep [选项]... 查询条件
+	选项：	-l 输出进程名
+		-U 检索指定用户进程,与l连用
+		-t 检索指定终端的进程,终端可通过who命令查看
+	[root@svr7 ~]# pgrep cron
+	[root@svr7 ~]# pgrep -l cron
+	[root@svr7 ~]# pgrep -lU lisi
+
+进程的前后台调度
+后台启动： 在命令行末尾添加“&”符号,不占用当前终端
+fg 命令 ：将后台任务恢复到前台运行
+bg 命令 ：激活后台被挂起的任务
+jobs:查看后台进程，-l 显示PID
+	[root@svr7 ~]# sleep 800 &          #将程序放入后台运行
+	[root@svr7 ~]# jobs                 #查看后台进程
+	[root@svr7 ~]# sleep 700        
+	^Z                          		#按Ctrl + z  暂停放入后台
+	[root@svr7 ~]# jobs             #查看后台进程
+	[1]-  运行中               sleep 800 &
+	[2]+  已停止               sleep 700
+	[root@svr7 ~]# bg 2             #将后台编号为2的进程继续运行
+	[root@svr7 ~]# jobs 
+	[1]-  运行中               sleep 800 &
+	[2]+  运行中               sleep 700 &
+	[root@svr7 ~]# fg 2             #将后台编号为2的进程恢复到前台
+	sleep 700
+	
+杀死进程
+	kill    [-9]  PID... 
+	killall [-9]  进程名...
+	pkill    关键字...
+	killall [-9] -u  用户名       #杀死该用户开启的所有进程，-9表示强制踢出用户
+	[root@svr7 ~]# killall sleep
+
+日志管理
+功能：系统和程序的“日记本”
+	记录系统、程序运行中发生的各种事件
+	通过查看日志,了解及排除故障
+主要用途：
+ /var/log/messages   记录内核消息、各种服务的公共消息
+ /var/log/dmesg      记录系统启动过程的各种消息
+ /var/log/cron       记录与cron计划任务相关的消息
+ /var/log/maillog    记录邮件收发相关的消息
+ /var/log/secure     记录与访问限制相关的安全消息
+分析：
+• tailf ：实时跟踪日志消息
+• users、who、w ：查看已登录的用户信息,详细度不同
+• last、lastb ： 查看最近登录成功/失败的用户信息
+	[root@svr7 ~]# users
+	[root@svr7 ~]# who
+	[root@svr7 ~]# w
+	[root@svr7 ~]# last  -2 		#查看最近2次成功登陆
+	[root@svr7 ~]# lastb -2		#查看最近2次失败登陆
+
+• Linux内核定义的事件紧急程度
+ 分为 0~7 共8种优先级别， 其数值越小,表示对应事件越紧急/重要
+  0  EMERG（紧急）：   会导致主机系统不可用的情况
+  1  ALERT（警告）：   必须马上采取措施解决的问题
+  2  CRIT（严重）：   比较严重的情况
+  3  ERR（错误）：    运行出现错误
+  4  WARNING（提醒）： 可能会影响系统功能的事件
+  5  NOTICE（注意） ：  不会影响系统但值得注意
+  6  INFO（信息）： 一般信息
+  7  DEBUG（调试）： 程序或系统调试信息等
+
+使用journalctl工具
+• 提取由 systemd-journal 服务搜集的日志（主要包括内核/系统日志、服务日志）
+• 常见用法
+	journalctl | grep 关键词
+	journalctl -u 服务名 [-p 优先级]
+	journalctl -n 消息条数
+	journalctl --since="yyyy-mm-dd HH:MM:SS" --until="yyyy-mm-dd HH:MM:SS"	#按时间搜索
+	[root@svr7 ~]# journalctl -u httpd 
+	[root@svr7 ~]# journalctl -u httpd  -p  6
+
+管理运行级别（运行模式）
+ RHEL5 、 RHEL6 切换运行级别的命令：init
+参数：	 0 ： 关机  
+	 1 ： 单用户模式（破解密码、修复系统） 
+	 2 ： 字符模式（不支持网络）
+	 3 ： 字符模式（支持网络） 
+	 4 ： 无定义
+	 5 ： 图形模式
+	 6 ： 重起 
+
+ RHEL7  运行模式
+     multi-user.target    字符模式（支持网络） 
+     graphical.target     图形模式
+临时切换运行模式
+	[root@svr7 /]# systemctl isolate graphical.target   #临时直接切换到图形
+	[root@svr7 /]# systemctl isolate multi-user.target  #临时直接切换到字符
+
+永久改变默认的运行模式
+	[root@svr7 /]# systemctl get-default     #查看当前默认的运行模式
+	[root@svr7 /]# systemctl set-default graphical.target #修改默认的运行模式
+	[root@svr7 /]# systemctl get-default 
+
+DHCP自动分配网络参数服务
+• Dynamic Host Configuration Protocol : 动态主机配置协议,由 IETF(Internet 网络工程师任务小组)组织制定,用来简化主机地址分配管理
+
+• 主要分配以下入网参数
+	IP地址/子网掩码/广播地址
+	默认网关地址、DNS服务器地址
+
+• DHCP工作过程以广播的方式进行，先到先得
+
+• DHCP地址分配的四次会话
+	DISCOVERY --> OFFER --> REQUEST --> ACK
+
+• 服务端基本概念
+	租期:允许客户机租用IP地址的时间期限,单位为秒
+	作用域:分配给客户机的IP地址所在的网段
+	地址池:用来动态分配的IP地址的范围
+
+• 搭建基本DHCP服务
+1.安装dhcp包
+	[root@svr7 ~]# yum -y install dhcp
+	[root@svr7 ~]# rpm -q dhcp
+
+2.修改配置文件 /etc/dhcp/dhcpd.conf
+	网段：代表的一群ip地址的集合
+ 	网络位不变，主机位都用0表示
+	[root@svr7 ~]# vim /etc/dhcp/dhcpd.conf 
+	末行模式     :r  /usr/share/doc/dhcp*/dhcpd.conf.example
+	 subnet  192.168.4.0  netmask  255.255.255.0  {  #指定分配的网段
+	   range 192.168.4.10  192.168.4.100;           #指定的分配具体的ip地址范围
+	   option domain-name-servers  8.8.8.8;         #指定dns地址
+	   option routers  192.168.4.254;               #指定网关地址
+	 }
+
+3.重起dhcpd服务
+
+• 网络装机的优势
+	规模化:同时装配多台主机
+	自动化:装系统、配置各种服务
+	远程实现:不需要光盘、U盘等物理安装介质
+
+• PXE网络:Pre-boot eXecution Environment
+	预启动执行环境,在操作系统之前运行
+	可用于远程安装
+
+• 工作模式
+	PXE client 集成在网卡的启动芯片中
+	当计算机引导时,从网卡芯片中把PXE client调入内存执行,获取PXE server配置、显示菜单,根据用户选择将远程引导程序下载到本机运行
+
+• 服务组件?
+	DHCP服务：分配IP地址、定位引导程序
+	TFTP服务：提供引导程序下载
+	HTTP服务(或FTP/NFS)：提供yum安装源
+
+• 客户机应具备的条件：
+	网卡芯片必须支持PXE协议
+	主板支持从网卡启动
+
+• 搭建PXE网络装机服务器
+1.dhcp：ip地址、next-server、filename
+2.tftp：pxelinux.0、pxelinux.cfg/default、vesamenu.c32、splash.png、vmlinuz、initrd.img、ks=http://192.168.4.7/ks.cfg
+3.httpd：http://192.168.4.7/rhel7
+
+一、配置dhcp服务pxe的设置
+1.修改配置文件/etc/dhcp/dhcpd.conf
+	subnet 192.168.4.0 netmask 255.255.255.0 {
+	  range 192.168.4.10 192.168.4.100;
+	  option domain-name-servers 8.8.8.8;
+	  option routers 192.168.4.254;
+	  next-server   192.168.4.7;     #指定下一个服务器地址
+	  filename   "pxelinux.0";       #pxelinux.0：网卡引导文件（安装说明书）二进制的文件
+	}
+
+2.重起dhcpd服务
+	[root@svr7 ~]# systemctl restart dhcpd
+
+二、搭建tftp服务
+	tftp:简单文件传输协议,默认端口:69
+	默认共享的路径：/var/lib/tftpboot
+1.安装tftp-server
+	[root@svr7 ~]# yum -y install tftp-server
+
+2.启动tftp服务
+	[root@svr7 ~]# systemctl restart tftp
+	[root@svr7 ~]# systemctl enable tftp
+
+3.部署 pxelinux.0 引导文件
+	[root@svr7 ~]# yum provides  */pxelinux.0  	#查询什么软件包产生pxelinux.0
+	[root@svr7 ~]# yum -y install  syslinux
+	[root@svr7 ~]# rpm -ql syslinux | grep pxelinux.0  #查询软件包安装清单
+	[root@svr7 ~]# cp /usr/share/syslinux/pxelinux.0 /var/lib/tftpboot/
+
+4.部署默认菜单文件
+	[root@svr7 ~]# mkdir /var/lib/tftpboot/pxelinux.cfg
+	[root@svr7 ~]# cp /dvd/isolinux/isolinux.cfg   /var/lib/tftpboot/pxelinux.cfg/default
+	[root@svr7 ~]# chmod u+w /var/lib/tftpboot/pxelinux.cfg/default		#方便接下来编辑，不需要强制保存
+
+5.部署 图形的模块 与 背景图片
+	[root@svr7 ~]# cp  /dvd/isolinux/vesamenu.c32  /dvd/isolinux/splash.png   /var/lib/tftpboot/		#拷贝图形模块和背景图片
+
+6.部署启动内核与驱动程序
+	[root@svr7 ~]# cp /dvd/isolinux/vmlinuz /dvd/isolinux/initrd.img /var/lib/tftpboot/	#拷贝动内核和驱动程序
+	[root@svr7 ~]# ls /var/lib/tftpboot/		#确认文件，其中splash.png为可选拷贝
+	 initrd.img  pxelinux.cfg  vesamenu.c32
+	 pxelinux.0  splash.png    vmlinuz
+
+7.修改菜单文件
+	[root@svr7 ~]# vim  /var/lib/tftpboot/pxelinux.cfg/default 
+	default vesamenu.c32    #默认加载图形的模块
+	timeout 600             #读秒时间为60秒
+	........
+	menu background splash.png         #指定背景图片
+	menu title NSD1801 PXE Server !    #标题信息
+
+	......
+	label linux
+	  menu label Install RHEL7        #显示菜单的内容
+	  kernel vmlinuz                  #加载内核
+	  append initrd=initrd.img        #加载驱动
+
+三、搭建httpd服务
+1.安装httpd软件包
+2.重起httpd服务，设置开机自启动
+3.利用httpd服务共享光盘所有内容
+	[root@svr7 ~]# mkdir /var/www/html/rhel7
+	[root@svr7 ~]# mount /dev/cdrom  /var/www/html/rhel7
+
+四、配置无人值守安装，应答文件的生成
+1.安装图形的工具，system-config-kickstart 
+	[root@svr7 ~]# yum -y install system-config-kickstart 
+
+2.检查yum仓库的标识是否为[development]
+3.运行
+	[root@svr7 ~]# system-config-kickstart	#配置完后，默认保存为/root/ks.cfg
+	[root@svr7 ~]# vim /root/ks.cfg		#事后想要修改可直接改配置文件
+
+五、利用httpd服务共享ks.cfg应答文件
+	[root@svr7 ~]# cp /root/ks.cfg   /var/www/html/
+
+六、修改默认菜单文件,指定ks.cfg应答文件
+	[root@svr7 ~]# vim /var/lib/tftpboot/pxelinux.cfg/default  
+	  在最后一行append initrd=initrd.img 追加 ks=http://192.168.4.7/ks.cfg
+
+
+
+
+
+
+
